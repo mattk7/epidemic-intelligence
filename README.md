@@ -1,0 +1,1 @@
+The repository for the public facing site that will host the data visualization handbook. The jupyter-book is in the `handbook` directory, and can be run by navigating to it in your console and executing ````jupyter-book build .``
