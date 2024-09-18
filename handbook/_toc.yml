@@ -4,4 +4,4 @@
 format: jb-book
 root: intro
 chapters:
-- file: cloud_curve_rankings
+- file: content/cloud_curve_rankings
