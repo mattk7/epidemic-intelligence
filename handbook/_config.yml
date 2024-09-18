@@ -5,7 +5,7 @@ title: Complex Intelligence Lab Visualization Handbook
 author: Matteo Chinazzi, Elijah Sandler
 logo: logo.png # we can put that cool logo with the lighthouse here :)
 
-# Force re-execution of notebooks on each build.
+# Cache outputs so we don't have to query the cloud every time.
 # See https://jupyterbook.org/content/execute.html
 execute:
   execute_notebooks: cache
@@ -31,7 +31,7 @@ repository:
   path_to_book: docs  # Optional path to your book, relative to the repository root
   branch: master  # Which branch of the repository should be used when creating links (optional)
 
-# Add GitHub buttons to your book
+# Add GitHub buttons to your book (we'll probably want this so users have access to source code)
 # See https://jupyterbook.org/customize/config.html#add-a-link-to-your-repository
 html:
   use_issues_button: true
