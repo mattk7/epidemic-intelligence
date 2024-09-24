@@ -4,4 +4,5 @@
 format: jb-book
 root: intro
 chapters:
-- file: content/cloud_curve_rankings
+- file: content/importation_pipeline
+- file: content/spaghetti_pipeline
