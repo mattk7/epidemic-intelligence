@@ -2,4 +2,4 @@ jupyter-book
 matplotlib
 numpy
 plotly
-google
+google-cloud-bigquery
