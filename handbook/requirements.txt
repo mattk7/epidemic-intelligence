@@ -1,5 +1,5 @@
 jupyter-book
-matplotlib
-numpy
+pandas
 plotly
 google-cloud-bigquery
+google-cloud-storage
