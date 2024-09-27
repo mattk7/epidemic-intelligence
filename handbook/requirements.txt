@@ -4,3 +4,4 @@ plotly
 google-cloud-bigquery
 google-cloud-storage
 similaritymeasures
+kaleido==0.1.0
