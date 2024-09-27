@@ -23,11 +23,12 @@ def generate_continuous_bins(category, min_age, max_age):
     return age_bins
 
 
-def build_sir_query_for_categories(country_ids, run_ids, min_age, max_age, categories, grouped=True):
+def build_country_query(table, country_ids, run_ids, min_age, max_age, categories, grouped=True):
     """
     Builds the full SQL query for multiple categories, country_ids, and run_ids with continuous age range.
     
     Args:
+    - table (str): name of table to be queried in `project.dataset.table` formtable, 
     - country_ids (list): List of country identifiers.
     - run_ids (list): List of run identifiers.
     - min_age (int): The minimum age for the age range.
@@ -64,7 +65,7 @@ def build_sir_query_for_categories(country_ids, run_ids, min_age, max_age, categ
         country_id,
         run_id,
         {', '.join(category_statements)}
-    FROM `net-data-viz-handbook.sri_data.SIR_0_countries_incidence_daily`
+    FROM `{table}`
     WHERE country_id IN ({country_ids_str}) AND run_id IN ({run_ids_str})
     GROUP BY {', '.join(group_by_columns)}
     ORDER BY date;
@@ -73,6 +74,7 @@ def build_sir_query_for_categories(country_ids, run_ids, min_age, max_age, categ
     return sql_query.replace("\n", " ").strip()
 
 # Example usage
+table = 'net-data-viz-handbook.sri_data.SIR_0_countries_incidence_daily'
 country_ids = [215, 216]
 run_ids = [1, 2]
 min_age = 5
@@ -80,10 +82,10 @@ max_age = 50
 categories = ['Susceptible', 'Infectious']
 
 # Generate SQL query with grouped=True (default behavior)
-query_grouped = build_sir_query_for_categories(country_ids, run_ids, min_age, max_age, categories, grouped=True)
+query_grouped = build_country_query(table, country_ids, run_ids, min_age, max_age, categories, grouped=True)
 
 # Generate SQL query with grouped=False (return individual bins)
-query_separate = build_sir_query_for_categories(country_ids, run_ids, min_age, max_age, categories, grouped=False)
+query_separate = build_country_query(table, country_ids, run_ids, min_age, max_age, categories, grouped=False)
 
 query_grouped, query_separate
 
