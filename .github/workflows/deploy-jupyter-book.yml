@@ -1,10 +1,10 @@
 name: Deploy Jupyter Book to GitHub Pages
 
 # this is the workflow trigger, commit it out to prevent site from updating on push
-on:
-  push:
-    branches:
-      - main  # or your default branch
+# on:
+#   push:
+#     branches:
+#       - main  # or your default branch
 
 jobs:
   build:
