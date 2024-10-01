@@ -25,6 +25,17 @@ jobs:
         pip install -r handbook/requirements.txt
         pip install jupyter-book ghp-import
 
+    # Create the Google Cloud credentials file from the secret
+    - name: Create Google Credentials File
+      run: |
+        echo "${{ secrets.GOOGLE_CREDENTIALS_JSON }}" > $HOME/google-credentials.json
+      shell: bash
+
+    # Set the environment variable to point to the generated credentials file
+    - name: Set Google Application Credentials
+      run: |
+        export GOOGLE_APPLICATION_CREDENTIALS="$HOME/google-credentials.json"
+
     - name: Build Jupyter Book
       run: |
         cd handbook
