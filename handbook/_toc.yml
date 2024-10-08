@@ -5,4 +5,4 @@ format: jb-book
 root: intro
 chapters:
 - file: content/importation_pipeline
-- file: content/spaghetti_pipeline
+- file: content/cloud_based_curves
