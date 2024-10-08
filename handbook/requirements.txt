@@ -2,6 +2,5 @@ jupyter-book
 pandas
 plotly
 google-cloud-bigquery
-google-cloud-storage
-similaritymeasures
-kaleido==0.1.0
+kaleido==0.1.0 #plotly helper
+matplotlib #for colors
