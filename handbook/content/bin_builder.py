@@ -1,3 +1,21 @@
+def generate_continuous_bins(category, min_age, max_age):
+    """
+    Generates the SQL snippet for a given category and continuous age range.
+    """
+    age_bins = []
+    age_intervals = [(0, 4), (5, 8), (9, 12), (13, 17), (18, 23), (24, 29), (30, 34), (35, 39),
+                     (40, 44), (45, 49), (50, 54), (55, 59), (60, 64), (65, 69), (70, 74), (75, 'plus')]
+
+    for start, end in age_intervals:
+        try:
+            if start >= min_age and (end <= max_age):
+                age_bins.append(f"{category}_{start}_{end}")
+        except(TypeError):
+            if start <= max_age or max_age == 'plus':
+                age_bins.append(f"{category}_{start}_{end}")
+    
+    return age_bins
+
 def build_country_query(table, country_ids, run_ids, min_age, max_age, categories, grouped=True):
     """
     Builds the full SQL query for multiple categories, country_ids, and run_ids with continuous age range.
@@ -44,7 +62,6 @@ def build_country_query(table, country_ids, run_ids, min_age, max_age, categorie
     SELECT
         date,
         country_id,
-        {', '.join(group_by_columns)}
         {', '.join(category_statements)}
     FROM `{table}`
     WHERE {where_clause}
