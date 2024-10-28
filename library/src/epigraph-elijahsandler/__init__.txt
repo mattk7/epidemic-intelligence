@@ -1,2 +1,0 @@
-# allows user to import netsi directly: from epigraph import netsi
-from .template import netsi
