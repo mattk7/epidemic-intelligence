@@ -26,3 +26,5 @@ pio.templates['netsi']['layout']['shapedefaults']['line']['color'] = '#428299'
 # colorway from nicole
 pio.templates['netsi']['layout']['colorway'] = ['#428299', '#67C4D3', '#F48A64', '#77C6B1', 
                                                 '#F2D65F', '#80A4CE', '#CC9EB1', '#BFD88F', '#8E8E8E']
+
+netsi = pio.templates['netsi']
