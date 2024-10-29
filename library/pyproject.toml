@@ -4,14 +4,17 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build]
 include = [
+    "src/epigraph_elijahsandler",
     "src/epigraph_elijahsandler/fonts/*.ttf",
     "src/epigraph_elijahsandler/templates/*.py",
-    "src/epigraph_elijahsandler/templates/netsi.json"  # Include the JSON template
 ]
+
+[tool.hatch.metadata]
+root = "src/epigraph_elijahsandler"
 
 [project]
 name = "epigraph-elijahsandler"
-version = "0.0.2"
+version = "0.0.8"
 authors = [
     { name = "Elijah Sandler", email = "sandler.e@northeastern.edu" },
 ]
@@ -25,11 +28,11 @@ classifiers = [
 ]
 
 dependencies = [
-  "pandas>=2.1.3",
-  "plotly>=5.24",
-  "google-cloud-bigquery",
-  "matplotlib>=3.7.2",
-  "kaleido>=0.2.1"
+  "pandas>2.1.0",
+  "plotly>5.24",
+  "google-cloud-bigquery>3.0.0",
+  "matplotlib>3.7.0",
+  "kaleido>0.2.0"
 ]
 
 [project.urls]
