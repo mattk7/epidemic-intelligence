@@ -2,6 +2,12 @@
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.hatch.build]
+include = [
+    "src/epigraph_elijahsandler/fonts/*.ttf",
+    "src/epigraph_elijahsandler/templates/*.py"
+]
+
 [project]
 name = "epigraph-elijahsandler"
 version = "0.0.1"
@@ -23,4 +29,5 @@ Homepage = "https://github.com/mattk7/viz-book-public/library"
 [project.dependencies]
 pandas = "^2.1.3"
 plotly = "^5.24"
-etc.
+google
+matplotlib
