@@ -3,11 +3,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from epigraph_elijahsandler.templates import netsi
-
-def execute(client, query: str) -> pd.DataFrame:
-    """Executes a BigQuery SQL query and returns the result as a DataFrame."""
-    query_job = client.query(query)
-    return query_job.to_dataframe()
+from epigraph_elijahsandler.helper import execute
 
 def build_geographic_filter(geo_level: str, geo_values, alias: str = "g_target") -> str:
     """Builds a geographic filter based on the provided level and values."""
