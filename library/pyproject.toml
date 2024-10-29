@@ -2,12 +2,19 @@
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-[tool.hatch.build]
-include = [
-    "src/epigraph_elijahsandler",
-    "src/epigraph_elijahsandler/fonts/*.ttf",
-    "src/epigraph_elijahsandler/templates/*.py",
-]
+# [tool.hatch.build]
+# include = [
+#     "src/epigraph_elijahsandler",
+#     "src/epigraph_elijahsandler/fonts/*.ttf",
+#      "src/epigraph_elijahsandler/templates/*.py",
+#  ]
+
+[tool.hatch.packages]
+include = ["epigraph_elijahsandler"]
+[tool.hatch]
+root = "src"
+
+
 
 [tool.hatch.metadata]
 root = "src/epigraph_elijahsandler"
