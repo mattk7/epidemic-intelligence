@@ -311,7 +311,7 @@ def build_sankey_query(table_name, reference_table_name, source_geo_level, targe
 
 def create_sankey_plot(data, title):
   # Create a set of unique node IDs from both sourceid and targetid
-  unique_ids = set(data['sourceid']).union(set(df['targetid']))
+  unique_ids = set(data['sourceid']).union(set(data['targetid']))
 
   # Create mapping for indices
   dict_indices = {id_: idx for idx, id_ in enumerate(unique_ids)}
@@ -343,9 +343,9 @@ def create_sankey_plot(data, title):
   ))
 
   fig.update_layout(
-      title_text = 'title',
+      title_text = title,
       template=netsi
-  )
+      )
 
   return fig
 
