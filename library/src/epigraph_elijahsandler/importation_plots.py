@@ -140,3 +140,235 @@ def area_plot(client, table_name: str, reference_table_name: str,
     fig = create_area_plot(data, value=value, title=title, xlabel=xlabel, ylabel=ylabel, legendlabel=legendlabel)
     
     return fig
+
+def build_sankey_query(table_name, reference_table_name, source_geo_level, target_geo_level, source_values, target_values, date_range, 
+                       cutoff=0.05, source_output_level=None, target_output_level=None, domestic=True):
+                       
+    if source_output_level == None:
+        source_output_level = source_geo_level
+    if target_output_level == None:
+        target_output_level = target_geo_level
+                       
+    # Build filters for both source and target regions
+    source_filter = build_geographic_filter(source_geo_level, source_values, alias="g_source")
+    target_filter = build_geographic_filter(target_geo_level, target_values, alias="g_target")
+
+    # Create the base where clause
+    where_clauses = []
+
+    if source_filter:
+        where_clauses.append(source_filter)
+    if target_filter:
+        where_clauses.append(target_filter)
+        
+    if not domestic:
+        # Exclude rows where target imports to itself
+        where_clauses.append(f"g_source.{target_output_level} != g_target.{target_output_level}")
+
+    # Join the where clauses with 'AND'
+    where_clause = ' AND '.join(where_clauses)
+
+    query = f"""
+    WITH total_exportations AS (
+        -- Calculate total exportations for the given date range
+        SELECT 
+            SUM(i.importations) AS total_sum
+        FROM 
+            `{table_name}` AS i
+        JOIN 
+            `{reference_table_name}` AS g_target 
+            ON g_target.basin_id = i.target_basin
+        JOIN 
+            `{reference_table_name}` AS g_source 
+            ON g_source.basin_id = i.source_basin
+        WHERE 
+            {where_clause}
+            AND i.date >= '{date_range[0]}'
+            AND i.date <= '{date_range[1]}'
+    ), source_totals AS (
+        -- Calculate total exportations for each source
+        SELECT
+            g_source.{source_output_level.split('_')[0]+'_id'} * -1 AS sourceid,
+            g_source.{source_output_level} AS source,
+            SUM(i.importations) AS source_sum
+        FROM 
+            `{table_name}` AS i
+        JOIN 
+            `{reference_table_name}` AS g_source
+            ON g_source.basin_id = i.source_basin
+        JOIN 
+            `{reference_table_name}` AS g_target 
+            ON g_target.basin_id = i.target_basin
+        WHERE 
+            {where_clause}
+            AND i.date >= '{date_range[0]}'
+            AND i.date <= '{date_range[1]}'
+        GROUP BY sourceid, source
+    ), target_totals AS (
+        -- Calculate total exportations for each target
+        SELECT
+            g_target.{target_output_level.split('_')[0]+'_id'} AS targetid,
+            g_target.{target_output_level} AS target,
+            SUM(i.importations) AS target_sum
+        FROM 
+            `{table_name}` AS i
+        JOIN 
+            `{reference_table_name}` AS g_target
+            ON g_target.basin_id = i.target_basin
+        JOIN 
+            `{reference_table_name}` AS g_source
+            ON g_source.basin_id = i.source_basin
+        WHERE 
+            {where_clause}
+            AND i.date >= '{date_range[0]}'
+            AND i.date <= '{date_range[1]}'
+        GROUP BY targetid, target
+    ), categorized_sources AS (
+        -- Categorize sources contributing less than the cutoff as "Other"
+        SELECT 
+            st.sourceid,
+            CASE 
+                WHEN st.source_sum < {cutoff} * t.total_sum THEN -1.5
+                ELSE st.sourceid
+            END AS revisedsourceid,
+            CASE 
+                WHEN st.source_sum < {cutoff} * t.total_sum THEN 'Other'
+                ELSE st.source
+            END AS source
+        FROM 
+            source_totals st
+        CROSS JOIN 
+            total_exportations t
+    ), categorized_targets AS (
+        -- Categorize targets contributing less than the cutoff as "Other"
+        SELECT 
+            tt.targetid,
+            CASE 
+                WHEN tt.target_sum < {cutoff} * t.total_sum THEN 1.5
+                ELSE tt.targetid
+            END AS revisedtargetid,
+            CASE 
+                WHEN tt.target_sum < {cutoff} * t.total_sum THEN 'Other'
+                ELSE tt.target
+            END AS target
+        FROM 
+            target_totals tt
+        CROSS JOIN 
+            total_exportations t
+    ), final_exportations AS (
+        -- Recalculate exportations with categorized sources and targets
+        SELECT
+            cs.sourceid,
+            cs.revisedsourceid,
+            cs.source,
+            ct.targetid,
+            ct.revisedtargetid,
+            ct.target,
+            SUM(i.importations) AS region_sum
+        FROM 
+            `{table_name}` AS i
+        JOIN 
+            `{reference_table_name}` AS g_source
+            ON g_source.basin_id = i.source_basin
+        JOIN 
+            `{reference_table_name}` AS g_target
+            ON g_target.basin_id = i.target_basin
+        JOIN 
+            categorized_sources cs
+            ON cs.sourceid = g_source.{source_output_level.split('_')[0]+'_id'} * -1
+        JOIN 
+            categorized_targets ct
+            ON ct.targetid = g_target.{target_output_level.split('_')[0]+'_id'}
+        WHERE 
+            {where_clause}
+            AND i.date >= '{date_range[0]}'
+            AND i.date <= '{date_range[1]}'
+        GROUP BY 
+            cs.sourceid, 
+            cs.revisedsourceid,
+            cs.source, 
+            ct.targetid, 
+            ct.revisedtargetid,
+            ct.target
+    )
+    -- Final query to return exportations, ensuring "Other" sources and targets are properly grouped
+    SELECT
+        fe.revisedsourceid AS sourceid,
+        fe.source AS source,
+        fe.revisedtargetid AS targetid,
+        fe.target AS target,
+        SUM(fe.region_sum) / (SELECT total_sum FROM total_exportations) AS exportations
+    FROM 
+        final_exportations fe
+    GROUP BY 
+        fe.revisedsourceid, 
+        fe.source, 
+        fe.revisedtargetid, 
+        fe.target;
+    """
+
+    return query
+
+def create_sankey_plot(data, title):
+  # Create a set of unique node IDs from both sourceid and targetid
+  unique_ids = set(data['sourceid']).union(set(df['targetid']))
+
+  # Create mapping for indices
+  dict_indices = {id_: idx for idx, id_ in enumerate(unique_ids)}
+
+  # Create mapping for labels (using the first occurrence of each name)
+  name_mapping = {}
+  for idx, row in data.iterrows():
+      name_mapping[row['sourceid']] = row['source']
+      name_mapping[row['targetid']] = row['target']
+
+  # Generate source, target, and value lists for the Sankey diagram
+  source = data['sourceid'].map(dict_indices)
+  target = data['targetid'].map(dict_indices)
+  value = data['exportations']
+
+  # Create Sankey diagram
+  fig = go.Figure(go.Sankey(
+      node=dict(
+          pad=15,
+          thickness=20,
+          line=dict(color='black', width=0.3),
+          label=[name_mapping[id_] for id_ in dict_indices.keys()],  # Use names as node labels
+      ),
+      link=dict(
+          source=source,  # Use mapped source indices
+          target=target,  # Use mapped target indices
+          value=value,
+      )
+  ))
+
+  fig.update_layout(
+      title_text = 'title',
+      template=netsi
+  )
+
+  return fig
+
+def sankey(client, table_name, reference_table_name, source_geo_level, target_geo_level, source_values, target_values, date_range, 
+           cutoff=0.05, source_output_level=None, target_output_level=None, domestic=True, title="Sankey Diagram"):
+    
+    # Generate the query
+    query = build_sankey_query(
+        table_name=table_name,
+        reference_table_name=reference_table_name,
+        source_geo_level=source_geo_level,
+        target_geo_level=target_geo_level,
+        source_values=source_values,
+        target_values=target_values,
+        date_range=date_range,
+        cutoff=cutoff,
+        source_output_level=source_output_level,
+        target_output_level=target_output_level,
+        domestic=domestic
+    )
+    
+    # Execute the query to get the data
+    data = execute(client, query)
+    
+    # Create and return the Sankey plot
+    return create_sankey_plot(data, title)
