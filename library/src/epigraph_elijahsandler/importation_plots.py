@@ -372,3 +372,151 @@ def sankey(client, table_name, reference_table_name, source_geo_level, target_ge
     
     # Create and return the Sankey plot
     return create_sankey_plot(data, title)
+
+def build_bar_query(table_name, reference_table_name, source_geo_level, target_geo_level, source_values, target_values, date_range, 
+                       cutoff=0.05, target_output_level=None, domestic=True):
+    if target_output_level == None:
+        target_output_level = target_geo_level
+                       
+    # Build filters for both source and target regions
+    source_filter = build_geographic_filter(source_geo_level, source_values, alias="g_source")
+    target_filter = build_geographic_filter(target_geo_level, target_values, alias="g_target")
+
+    # Create the base where clause
+    where_clauses = []
+
+    if source_filter:
+        where_clauses.append(source_filter)
+    if target_filter:
+        where_clauses.append(target_filter)
+            
+    if not domestic:
+        # Exclude rows where target imports to itself
+        where_clauses.append(f"g_source.{target_output_level} != g_target.{target_output_level}")
+        
+    # Join the where clauses with 'AND'
+    where_clause = ' AND '.join(where_clauses)
+        
+    query = f"""
+        WITH total_exportations AS (
+            -- Calculate total exportations for the given date range
+            SELECT 
+                SUM(i.importations) AS total_sum
+            FROM 
+                `{table_name}` AS i
+            JOIN 
+                `{reference_table_name}` AS g_target 
+                ON g_target.basin_id = i.target_basin
+            JOIN 
+                `{reference_table_name}` AS g_source 
+                ON g_source.basin_id = i.source_basin
+            WHERE 
+                {where_clause}
+                AND i.date >= '{date_range[0]}'
+                AND i.date <= '{date_range[1]}'
+        ), 
+        target_totals AS (
+            -- Calculate total exportations for each target
+            SELECT
+                g_target.{target_output_level.split('_')[0]+'_id'} AS targetid,
+                g_target.{target_output_level} AS target,
+                SUM(i.importations) AS target_sum
+            FROM 
+                `{table_name}` AS i
+            JOIN 
+                `{reference_table_name}` AS g_target
+                ON g_target.basin_id = i.target_basin
+            JOIN 
+                `{reference_table_name}` AS g_source
+                ON g_source.basin_id = i.source_basin
+            WHERE 
+                {where_clause}
+                AND i.date >= '{date_range[0]}'
+                AND i.date <= '{date_range[1]}'
+            GROUP BY targetid, target
+        ), 
+        categorized_targets AS (
+            -- Categorize targets contributing less than the cutoff as "Other"
+            SELECT 
+                tt.targetid,
+                CASE 
+                    WHEN tt.target_sum < {cutoff} * t.total_sum THEN -1
+                    ELSE tt.targetid
+                END AS revisedtargetid,
+                CASE 
+                    WHEN tt.target_sum < {cutoff} * t.total_sum THEN 'Other'
+                    ELSE tt.target
+                END AS target,
+                tt.target_sum
+            FROM 
+                target_totals tt
+            CROSS JOIN 
+                total_exportations t
+        )
+        -- Final query to sum importations for each target and group "Other" regions
+        SELECT 
+            ct.revisedtargetid AS targetid,
+            ct.target AS target,
+            SUM(ct.target_sum) AS total_importations
+        FROM 
+            categorized_targets ct
+        GROUP BY 
+            targetid, target
+        ORDER BY 
+            total_importations DESC;
+
+        """
+    
+    return query
+
+def create_bar_chart(data: pd.DataFrame, title: str = 'Relative Risk of Importation', 
+                     xlabel: str = 'Relative Risk of Importation', ylabel: str = 'Geography'):
+    fig = px.bar(
+    data.iloc[:, :], x='exportations', y='target', orientation='h', 
+    labels={
+        'target': 'Target',
+        'exportations': 'Relative Risk of Importation'
+    },
+    template='netsi'
+)
+
+# Sort y-axis by exportations with "Other" fixed at the bottom
+    fig.update_layout(
+        yaxis={'categoryorder': 'array', 'categoryarray': ['Other'] + sorted(
+            [x for x in data['target'].unique() if x != 'Other'],
+            key=lambda target: data.loc[data['target'] == target, 'exportations'].sum(),
+            reverse=False
+        )},
+        title={
+            'text': title
+            },
+        showlegend=False
+    )
+
+    return fig
+
+def relative_risk(client, table_name, reference_table_name, source_geo_level, target_geo_level, source_values, target_values, date_range, 
+           cutoff=0.05, target_output_level=None, domestic=True, 
+           title="Relative Risk of Importation", xlabel="Relative Risk of Importation", 
+           ylabel=None):
+
+    # Generate the query
+    query = build_bar_query(
+        table_name=table_name,
+        reference_table_name=reference_table_name,
+        source_geo_level=source_geo_level,
+        target_geo_level=target_geo_level,
+        source_values=source_values,
+        target_values=target_values,
+        date_range=date_range,
+        cutoff=cutoff,
+        target_output_level=target_output_level,
+        domestic=domestic
+    )
+    
+    # Execute the query to get the data
+    data = execute(client, query)
+    
+    # Create and return the Sankey plot
+    return create_bar_chart(data, title, xlabel, 
+                            ylabel if ylabel is not None else target_output_level)

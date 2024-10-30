@@ -1,1 +1,1 @@
-from .importation_plots import *
+from .importation_plots import area_plot, sankey
