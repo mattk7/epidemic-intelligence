@@ -374,7 +374,7 @@ def sankey(client, table_name, reference_table_name, source_geo_level, target_ge
     return create_sankey_plot(data, title)
 
 def build_bar_query(table_name, reference_table_name, source_geo_level, target_geo_level, source_values, target_values, date_range, 
-                       cutoff=0.05, target_output_level=None, domestic=True):
+                       cutoff=0.05, target_output_level=None, domestic=True, n=20):
     if target_output_level == None:
         target_output_level = target_geo_level
                        
@@ -434,25 +434,37 @@ def build_bar_query(table_name, reference_table_name, source_geo_level, target_g
                 AND i.date >= '{date_range[0]}'
                 AND i.date <= '{date_range[1]}'
             GROUP BY targetid, target
-        ), 
-        categorized_targets AS (
-            -- Categorize targets contributing less than the cutoff as "Other"
-            SELECT 
-                tt.targetid,
-                CASE 
-                    WHEN tt.target_sum < {cutoff} * t.total_sum THEN -1
-                    ELSE tt.targetid
-                END AS revisedtargetid,
-                CASE 
-                    WHEN tt.target_sum < {cutoff} * t.total_sum THEN 'Other'
-                    ELSE tt.target
-                END AS target,
-                tt.target_sum
-            FROM 
-                target_totals tt
-            CROSS JOIN 
-                total_exportations t
-        )
+            ORDER BY target_sum DESC
+        ), ranked_targets AS (
+        -- Rank targets based on their target_sum
+        SELECT 
+            tt.targetid,
+            tt.target,
+            tt.target_sum,
+            ROW_NUMBER() OVER (ORDER BY tt.target_sum DESC) AS rank
+        FROM 
+            target_totals tt
+        ),categorized_targets AS (
+        -- Categorize targets contributing less than the cutoff or outside the top n-1 as "Other"
+        SELECT 
+            rt.targetid,
+            CASE 
+                WHEN rt.target_sum < {cutoff} * t.total_sum THEN -1
+                WHEN rt.rank >= {n} THEN -1
+                ELSE rt.targetid
+            END AS revisedtargetid,
+            CASE 
+                WHEN rt.target_sum < {cutoff} * t.total_sum THEN 'Other'
+                WHEN rt.rank >= {n} THEN 'Other'
+                ELSE rt.target
+            END AS target,
+            rt.target_sum
+        FROM 
+            ranked_targets rt
+        CROSS JOIN 
+            total_exportations t
+    )
+
         -- Final query to sum importations for each target and group "Other" regions
         SELECT 
             ct.revisedtargetid AS targetid,
@@ -496,7 +508,7 @@ def create_bar_chart(data: pd.DataFrame, title: str = 'Relative Risk of Importat
     return fig
 
 def relative_risk(client, table_name, reference_table_name, source_geo_level, target_geo_level, source_values, target_values, date_range, 
-           cutoff=0.05, target_output_level=None, domestic=True, 
+           cutoff=0.05, n=20, target_output_level=None, domestic=True, 
            title="Relative Risk of Importation", xlabel="Relative Risk of Importation", 
            ylabel=None):
 
@@ -511,7 +523,8 @@ def relative_risk(client, table_name, reference_table_name, source_geo_level, ta
         date_range=date_range,
         cutoff=cutoff,
         target_output_level=target_output_level,
-        domestic=domestic
+        domestic=domestic,
+        n=n
     )
     
     # Execute the query to get the data
