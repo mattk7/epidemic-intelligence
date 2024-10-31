@@ -8,6 +8,7 @@ pio.templates['netsi']['layout']['title'] = dict(x=.5, y=.95, yref='container',
                                                  font=dict(color='black', size=28, weight=400),
                                                  subtitle=dict(font=dict(color='#373737', size=14, weight=200))
                                                 )
+pio.templates['netsi']['layout']['title']['automargin'] = True
 
 # font
 pio.templates['netsi']['layout']['font'] = dict(family='Barlow', size=14, color='black')
