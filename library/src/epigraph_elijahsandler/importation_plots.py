@@ -130,14 +130,15 @@ def area_plot(client, table_name: str, reference_table_name: str,
         source_values=source_values,
         target_values=target_values,
         domestic=domestic,
-        cutoff=cutoff
+        cutoff=cutoff,
+        display=display
     )
     
     # Step 2: Execute the query
     data = execute(client, query)
     
     # Step 3: Create the area plot
-    fig = create_area_plot(data, value=value, title=title, xlabel=xlabel, ylabel=ylabel, legendlabel=legendlabel)
+    fig = create_area_plot(data, value=value, title=title, xlabel=xlabel, ylabel=ylabel, legendlabel=legendlabel, display=display)
     
     return fig
 
@@ -473,7 +474,7 @@ def build_bar_query(table_name, reference_table_name, source_geo_level, target_g
         SELECT 
             ct.revisedtargetid AS targetid,
             ct.target AS target,
-            SUM(ct.target_sum) AS total_importations
+            SUM(ct.target_sum) / (SELECT total_sum FROM total_exportations) AS total_importations
         FROM 
             categorized_targets ct
         GROUP BY 
