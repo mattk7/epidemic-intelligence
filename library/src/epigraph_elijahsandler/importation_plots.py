@@ -53,7 +53,7 @@ def build_ap_query(table_name: str, reference_table_name: str, source_geo_level:
       WHERE 
         {where_clause}  
       GROUP BY 
-        g_source.{output_geo_level}
+        g_{display}.{output_geo_level}
     ),
     total_imports AS (
       SELECT 
