@@ -23,7 +23,7 @@ def build_geographic_filter(geo_level: str, geo_values, alias: str = "g_target")
     return ""  # Return empty string if no filtering is needed
 
 def build_ap_query(table_name: str, reference_table_name: str, source_geo_level: str, 
-                   target_geo_level: str, output_geo_level: str = None, 
+                   target_geo_level: str, output_resolution: str = None, 
                    source_values=None, target_values=None, domestic: bool = True, 
                    cutoff: float = 0.05, display: str = 'source') -> str:
     """Builds an SQL query for analyzing importation data."""
@@ -40,7 +40,7 @@ def build_ap_query(table_name: str, reference_table_name: str, source_geo_level:
     query = f"""
     WITH region_imports AS (
       SELECT 
-        g_{display}.{output_geo_level} AS {display}_label, 
+        g_{display}.{output_resolution} AS {display}_label, 
         SUM(i.importations) AS total_importations
       FROM 
         `{table_name}` AS i
@@ -53,7 +53,7 @@ def build_ap_query(table_name: str, reference_table_name: str, source_geo_level:
       WHERE 
         {where_clause}  
       GROUP BY 
-        g_{display}.{output_geo_level}
+        g_{display}.{output_resolution}
     ),
     total_imports AS (
       SELECT 
@@ -89,7 +89,7 @@ def build_ap_query(table_name: str, reference_table_name: str, source_geo_level:
       ON g_source.basin_id = i.source_basin
     JOIN 
       categorized_regions cr 
-      ON cr.{display}_label = g_{display}.{output_geo_level}
+      ON cr.{display}_label = g_{display}.{output_resolution}
     WHERE 
       {where_clause}
     GROUP BY 
@@ -112,7 +112,7 @@ def create_area_plot(data: pd.DataFrame, value: str, title: str = 'Area Plot',
 
 def area_plot(client, table_name: str, reference_table_name: str,
                                  source_geo_level: str, target_geo_level: str,
-                                 output_geo_level: str = None, 
+                                 output_resolution: str = None, 
                                  source_values=None, target_values=None, 
                                  domestic: bool = True, cutoff: float = 0.05,
                                  value: str = 'importations', title: str = 'Area Plot',
@@ -126,7 +126,7 @@ def area_plot(client, table_name: str, reference_table_name: str,
         reference_table_name=reference_table_name,
         source_geo_level=source_geo_level,
         target_geo_level=target_geo_level,
-        output_geo_level=output_geo_level,
+        output_resolution=output_resolution,
         source_values=source_values,
         target_values=target_values,
         domestic=domestic,
@@ -143,12 +143,12 @@ def area_plot(client, table_name: str, reference_table_name: str,
     return fig
 
 def build_sankey_query(table_name, reference_table_name, source_geo_level, target_geo_level, source_values, target_values, date_range, 
-                       cutoff=0.05, source_output_level=None, target_output_level=None, domestic=True):
+                       cutoff=0.05, source_resolution=None, target_resolution=None, domestic=True):
                        
-    if source_output_level == None:
-        source_output_level = source_geo_level
-    if target_output_level == None:
-        target_output_level = target_geo_level
+    if source_resolution == None:
+        source_resolution = source_geo_level
+    if target_resolution == None:
+        target_resolution = target_geo_level
                        
     # Build filters for both source and target regions
     source_filter = build_geographic_filter(source_geo_level, source_values, alias="g_source")
@@ -164,7 +164,7 @@ def build_sankey_query(table_name, reference_table_name, source_geo_level, targe
         
     if not domestic:
         # Exclude rows where target imports to itself
-        where_clauses.append(f"g_source.{target_output_level} != g_target.{target_output_level}")
+        where_clauses.append(f"g_source.{target_resolution} != g_target.{target_resolution}")
 
     # Join the where clauses with 'AND'
     where_clause = ' AND '.join(where_clauses)
@@ -189,8 +189,8 @@ def build_sankey_query(table_name, reference_table_name, source_geo_level, targe
     ), source_totals AS (
         -- Calculate total exportations for each source
         SELECT
-            g_source.{source_output_level.split('_')[0]+'_id'} * -1 AS sourceid,
-            g_source.{source_output_level} AS source,
+            g_source.{source_resolution.split('_')[0]+'_id'} * -1 AS sourceid,
+            g_source.{source_resolution} AS source,
             SUM(i.importations) AS source_sum
         FROM 
             `{table_name}` AS i
@@ -208,8 +208,8 @@ def build_sankey_query(table_name, reference_table_name, source_geo_level, targe
     ), target_totals AS (
         -- Calculate total exportations for each target
         SELECT
-            g_target.{target_output_level.split('_')[0]+'_id'} AS targetid,
-            g_target.{target_output_level} AS target,
+            g_target.{target_resolution.split('_')[0]+'_id'} AS targetid,
+            g_target.{target_resolution} AS target,
             SUM(i.importations) AS target_sum
         FROM 
             `{table_name}` AS i
@@ -276,10 +276,10 @@ def build_sankey_query(table_name, reference_table_name, source_geo_level, targe
             ON g_target.basin_id = i.target_basin
         JOIN 
             categorized_sources cs
-            ON cs.sourceid = g_source.{source_output_level.split('_')[0]+'_id'} * -1
+            ON cs.sourceid = g_source.{source_resolution.split('_')[0]+'_id'} * -1
         JOIN 
             categorized_targets ct
-            ON ct.targetid = g_target.{target_output_level.split('_')[0]+'_id'}
+            ON ct.targetid = g_target.{target_resolution.split('_')[0]+'_id'}
         WHERE 
             {where_clause}
             AND i.date >= '{date_range[0]}'
@@ -355,7 +355,7 @@ def create_sankey_plot(data, title):
   return fig
 
 def sankey(client, table_name, reference_table_name, source_geo_level, target_geo_level, source_values, target_values, date_range, 
-           cutoff=0.05, source_output_level=None, target_output_level=None, domestic=True, title="Sankey Diagram"):
+           cutoff=0.05, source_resolution=None, target_resolution=None, domestic=True, title="Sankey Diagram"):
     
     # Generate the query
     query = build_sankey_query(
@@ -367,8 +367,8 @@ def sankey(client, table_name, reference_table_name, source_geo_level, target_ge
         target_values=target_values,
         date_range=date_range,
         cutoff=cutoff,
-        source_output_level=source_output_level,
-        target_output_level=target_output_level,
+        source_resolution=source_resolution,
+        target_resolution=target_resolution,
         domestic=domestic
     )
     
@@ -379,9 +379,9 @@ def sankey(client, table_name, reference_table_name, source_geo_level, target_ge
     return create_sankey_plot(data, title)
 
 def build_bar_query(table_name, reference_table_name, source_geo_level, target_geo_level, source_values, target_values, date_range, 
-                       cutoff=0.05, target_output_level=None, domestic=True, n=20):
-    if target_output_level == None:
-        target_output_level = target_geo_level
+                       cutoff=0.05, target_resolution=None, domestic=True, n=20):
+    if target_resolution == None:
+        target_resolution = target_geo_level
                        
     # Build filters for both source and target regions
     source_filter = build_geographic_filter(source_geo_level, source_values, alias="g_source")
@@ -397,7 +397,7 @@ def build_bar_query(table_name, reference_table_name, source_geo_level, target_g
             
     if not domestic:
         # Exclude rows where target imports to itself
-        where_clauses.append(f"g_source.{target_output_level} != g_target.{target_output_level}")
+        where_clauses.append(f"g_source.{target_resolution} != g_target.{target_resolution}")
         
     # Join the where clauses with 'AND'
     where_clause = ' AND '.join(where_clauses)
@@ -423,8 +423,8 @@ def build_bar_query(table_name, reference_table_name, source_geo_level, target_g
         target_totals AS (
             -- Calculate total exportations for each target
             SELECT
-                g_target.{target_output_level.split('_')[0]+'_id'} AS targetid,
-                g_target.{target_output_level} AS target,
+                g_target.{target_resolution.split('_')[0]+'_id'} AS targetid,
+                g_target.{target_resolution} AS target,
                 SUM(i.importations) AS target_sum
             FROM 
                 `{table_name}` AS i
@@ -513,7 +513,7 @@ def create_bar_chart(data: pd.DataFrame, title: str = 'Relative Risk of Importat
     return fig
 
 def relative_risk(client, table_name, reference_table_name, source_geo_level, target_geo_level, source_values, target_values, date_range, 
-           cutoff=0.05, n=20, target_output_level=None, domestic=True, 
+           cutoff=0.05, n=20, target_resolution=None, domestic=True, 
            title="Relative Risk of Importation", xlabel="Relative Risk of Importation", 
            ylabel=None):
 
@@ -527,7 +527,7 @@ def relative_risk(client, table_name, reference_table_name, source_geo_level, ta
         target_values=target_values,
         date_range=date_range,
         cutoff=cutoff,
-        target_output_level=target_output_level,
+        target_resolution=target_resolution,
         domestic=domestic,
         n=n
     )
@@ -537,4 +537,4 @@ def relative_risk(client, table_name, reference_table_name, source_geo_level, ta
     
     # Create and return the Sankey plot
     return create_bar_chart(data, title, xlabel, 
-                            ylabel if ylabel is not None else target_output_level)
+                            ylabel if ylabel is not None else target_resolution)
