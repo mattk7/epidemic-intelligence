@@ -1,1 +1,1 @@
-from .importation_plots import area_plot, sankey
+from .importation_plots import area_plot, sankey, relative_risk

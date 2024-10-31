@@ -25,7 +25,7 @@ def build_geographic_filter(geo_level: str, geo_values, alias: str = "g_target")
 def build_ap_query(table_name: str, reference_table_name: str, source_geo_level: str, 
                    target_geo_level: str, output_geo_level: str = None, 
                    source_values=None, target_values=None, domestic: bool = True, 
-                   cutoff: float = 0.05) -> str:
+                   cutoff: float = 0.05, display: str = 'source') -> str:
     """Builds an SQL query for analyzing importation data."""
     source_filter = build_geographic_filter(source_geo_level, source_values, alias="g_source") if source_values else 'TRUE'
     target_filter = build_geographic_filter(target_geo_level, target_values, alias="g_target") if target_values else 'TRUE'
@@ -40,7 +40,7 @@ def build_ap_query(table_name: str, reference_table_name: str, source_geo_level:
     query = f"""
     WITH region_imports AS (
       SELECT 
-        g_source.{output_geo_level} AS source_label, 
+        g_{display}.{output_geo_level} AS {display}_label, 
         SUM(i.importations) AS total_importations
       FROM 
         `{table_name}` AS i
@@ -62,16 +62,16 @@ def build_ap_query(table_name: str, reference_table_name: str, source_geo_level:
     ),
     categorized_regions AS (
       SELECT 
-        r.source_label,
+        r.{display}_label,
         CASE 
           WHEN r.total_importations < ({cutoff} * (SELECT grand_total_importations FROM total_imports)) THEN 'Other'
-          ELSE r.source_label
+          ELSE r.{display}_label
         END AS categorized_label
       FROM 
         region_imports r
     )
     SELECT 
-      cr.categorized_label AS source, 
+      cr.categorized_label AS {display}, 
       i.date, 
       SUM(i.importations) AS importations,
       AVG(SUM(i.importations)) OVER (
@@ -89,7 +89,7 @@ def build_ap_query(table_name: str, reference_table_name: str, source_geo_level:
       ON g_source.basin_id = i.source_basin
     JOIN 
       categorized_regions cr 
-      ON cr.source_label = g_source.{output_geo_level}
+      ON cr.{display}_label = g_{display}.{output_geo_level}
     WHERE 
       {where_clause}
     GROUP BY 
@@ -102,9 +102,9 @@ def build_ap_query(table_name: str, reference_table_name: str, source_geo_level:
 
 def create_area_plot(data: pd.DataFrame, value: str, title: str = 'Area Plot', 
                      xlabel: str = 'Date', ylabel: str = 'Exportations', 
-                     legendlabel: str = 'Source') -> go.Figure:
+                     legendlabel: str = 'Source', display: str = 'source') -> go.Figure:
     """Creates an area plot using the provided data."""
-    fig = px.area(data, x='date', y=value, color='source', template=netsi)
+    fig = px.area(data, x='date', y=value, color=display, template=netsi)
     fig.update_traces(line=dict(width=0.4))
     fig.update_layout(title_text=title, legend_traceorder='reversed',
                       xaxis_title=xlabel, yaxis_title=ylabel, legend_title_text=legendlabel)
@@ -117,7 +117,7 @@ def area_plot(client, table_name: str, reference_table_name: str,
                                  domestic: bool = True, cutoff: float = 0.05,
                                  value: str = 'importations', title: str = 'Area Plot',
                                  xlabel: str = 'Date', ylabel: str = 'Exportations', 
-                                 legendlabel: str = 'Source') -> go.Figure:
+                                 legendlabel: str = 'Source', display: str = 'source') -> go.Figure:
     """Creates an area plot by executing a query based on the provided parameters."""
     
     # Step 1: Build the query
@@ -346,6 +346,10 @@ def create_sankey_plot(data, title):
       title_text = title,
       template=netsi
       )
+  
+  # convert values to percentages and other formatting
+  fig.data[0]['valueformat'] = '.1%'
+  fig.data[0].node['line']['width'] = 0
 
   return fig
 
@@ -487,7 +491,7 @@ def create_bar_chart(data: pd.DataFrame, title: str = 'Relative Risk of Importat
     data.iloc[:, :], x='total_importations', y='target', orientation='h', 
     labels={
         'target': 'Target',
-        'exportations': 'Relative Risk of Importation'
+        'total_importations': 'Relative Risk of Importation'
     },
     template='netsi'
 )
@@ -496,7 +500,7 @@ def create_bar_chart(data: pd.DataFrame, title: str = 'Relative Risk of Importat
     fig.update_layout(
         yaxis={'categoryorder': 'array', 'categoryarray': ['Other'] + sorted(
             [x for x in data['target'].unique() if x != 'Other'],
-            key=lambda target: data.loc[data['target'] == target, 'exportations'].sum(),
+            key=lambda target: data.loc[data['target'] == target, 'total_importations'].sum(),
             reverse=False
         )},
         title={
