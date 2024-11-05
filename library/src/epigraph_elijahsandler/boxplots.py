@@ -528,3 +528,347 @@ def functional_boxplot(client, table, reference_table, target,
             not_found_ok=True 
         )
         print(f"BigQuery dataset `{client.project}.{dataset}` removed successfully, or it did not exist.")
+
+    return fig
+
+def fixed_time_boxplot(client, table, reference_table, target, 
+                       org_geography, geography=None, geography_value=None, 
+                       date_range=None, 
+                       num_clusters=1, num_features=10, grouping_method='mse', 
+                       dataset=None, delete_data=True, kmeans_table=False,
+                       confidence=.9, full_range = False, outlying_points = True):
+    
+        # make sure we have a dataset name
+    if dataset == None:
+        dataset = generate_random_hash()
+        
+    # create dataset if it doesn't already exist
+    create_dataset(client, dataset)
+
+    # get id of geo target
+    geo_id = geography.split('_')[0]+'_id'
+
+    if kmeans_table is False:
+        if num_clusters > 1:
+            # Step 1: Create initial data table
+            query_base = f""" CREATE OR REPLACE TABLE `{dataset}.data` AS
+            SELECT 
+                t.date,
+                g.{geography} AS geo, 
+                g.{geo_id} AS geoid,
+                t.run_id,
+                SUM(t.{target}) as value
+            FROM `{table}` as t
+            JOIN `{reference_table}` AS g
+                ON g.{org_geography} = t.{org_geography}
+            WHERE 
+                {build_geographic_filter(geography, geography_value, alias='g')}
+                {f"AND t.date >= '{date_range[0]}' AND t.date <= '{date_range[1]}'" if date_range is not None else ''}
+            --  AND run_id BETWEEN 1 AND 100
+            GROUP BY date, geoid, geo, run_id
+            ORDER BY date
+            ;"""
+
+            df = client.query(query_base).result()  # Execute the query to create the table
+            print("Data sliced successfully.")
+
+            # Step 2: Create the curve distance table for mse and abc
+            query_distances = f"""
+            CREATE OR REPLACE TABLE `{dataset}.curve_distances` AS
+            SELECT
+                a.run_id AS run_id_a,
+                b.run_id AS run_id_b,
+                AVG(POW(a.value - b.value, 2)) AS mse,
+                SUM(ABS(a.value - b.value)) AS abc
+            FROM
+                `{dataset}.data` a
+            JOIN
+                `{dataset}.data` b
+            ON
+                a.date = b.date
+            GROUP BY
+                run_id_a, run_id_b
+            """
+            client.query(query_distances).result()  # Execute the query to create the table
+            print("Curve distance table created successfully.")
+
+            # Step 3: Create the distance matrix
+            query_distance_matrix = f"""
+            CREATE OR REPLACE TABLE `{dataset}.distance_matrix`
+            CLUSTER BY run_id AS --optimizations
+            SELECT
+                run_id_a AS run_id,
+                    ARRAY_AGG(STRUCT(run_id_b, {grouping_method}) ORDER BY run_id_b ASC) AS distances
+            FROM
+                `{dataset}.curve_distances`
+            GROUP BY
+                run_id_a;
+            """
+            client.query(query_distance_matrix).result()  # Execute the query to create the table
+            print("Distance matrix table created successfully.")
+
+        # Step 4: Handle case when num_clusters = 1
+        if num_clusters == 1:
+            query_assign_all_to_one_cluster = f"""
+            CREATE OR REPLACE TABLE `{dataset}.kmeans_results`
+            CLUSTER BY CENTROID_ID, run_id AS
+            SELECT DISTINCT
+                run_id,
+                1 AS centroid_id  -- Assign all runs to centroid 1
+            FROM 
+                `{dataset}.data`
+            """
+            s = time.time()
+            client.query(query_assign_all_to_one_cluster).result()  # Execute the query to assign all runs to centroid 1
+            print(f"All runs assigned to centroid 1 successfully in {round(time.time() - s, 3)} seconds.")
+            
+        else:
+            # Step 4: Create the K-means model by selecting the first num_features features based on actual distances
+            query_create_model = f"""
+            CREATE OR REPLACE MODEL `{dataset}.kmeans_model`
+            OPTIONS(model_type='kmeans', num_clusters={num_clusters}) AS
+            SELECT
+                run_id,
+                ARRAY(
+                    SELECT distance.{grouping_method} 
+                    FROM UNNEST(distances) AS distance 
+                    WHERE distance.run_id_b <= {num_features}  -- Select only the first num_features
+                ) AS features
+            FROM
+                `{dataset}.distance_matrix`;
+            """
+            s = time.time()
+            client.query(query_create_model).result()  # Execute the model creation
+            print(f"K-means model created successfully in {round(time.time() - s, 3)} seconds.")
+
+            # Step 5: Apply K-means clustering and save results in a table
+            query_kmeans = f"""
+            CREATE OR REPLACE TABLE `{dataset}.kmeans_results`
+            CLUSTER BY CENTROID_ID, run_id AS
+            SELECT
+                *
+            FROM
+                ML.PREDICT(MODEL `{dataset}.kmeans_model`,
+                    (SELECT
+                        run_id,
+                        ARRAY(
+                            SELECT distance.{grouping_method} 
+                            FROM UNNEST(distances) AS distance 
+                            WHERE distance.run_id_b <= {num_features}  
+                        ) AS features
+                    FROM
+                        `{dataset}.distance_matrix`)
+                ) AS predictions
+            """
+            s = time.time()
+            client.query(query_kmeans).result()  # Execute the model creation
+            print(f"K-means clustering results saved successfully in {round(time.time() - s, 3)} seconds.")
+
+    fixed_time_quantiles = f"""
+    WITH daily_data AS (
+        SELECT 
+            date, 
+            value,
+            run_id,
+            ROW_NUMBER() OVER (PARTITION BY date ORDER BY value) AS row_num,
+            COUNT(*) OVER (PARTITION BY date) AS total_rows
+        FROM `{dataset}.data`
+    ),
+
+    -- Joining with kmeans_results to attach CENTROID_ID
+    centroid_data AS (
+        SELECT 
+            d.date,
+            d.value,
+            d.run_id,
+            k.CENTROID_ID
+        FROM daily_data d
+        JOIN `{f'{dataset}.kmeans_results' if kmeans_table is False else kmeans_table}` k ON d.run_id = k.run_id -- Adjust the join condition if necessary
+    )
+
+    SELECT 
+        CENTROID_ID,
+        date,
+        PERCENTILE_CONT(value, 0) OVER (PARTITION BY CENTROID_ID, date) AS Min,
+        PERCENTILE_CONT(value, {(1-confidence)}) OVER (PARTITION BY CENTROID_ID, date) AS LowBound,
+        PERCENTILE_CONT(value, 0.25) OVER (PARTITION BY CENTROID_ID, date) AS Q1,
+        PERCENTILE_CONT(value, 0.50) OVER (PARTITION BY CENTROID_ID, date) AS Median,
+        PERCENTILE_CONT(value, 0.75) OVER (PARTITION BY CENTROID_ID, date) AS Q3,
+        PERCENTILE_CONT(value, {(1+confidence)/2}) OVER (PARTITION BY CENTROID_ID, date) AS HighBound,
+        PERCENTILE_CONT(value, 1) OVER (PARTITION BY CENTROID_ID, date) AS Max
+    FROM centroid_data
+    GROUP BY CENTROID_ID, date, value
+    ORDER BY CENTROID_ID, date;
+    """
+    plt_ftq = client.query(fixed_time_quantiles).result().to_dataframe()  # Execute the query to create the table
+    print("Data pulled successfully.")
+
+    # a monstrosity of a query
+    get_outlying_points = f"""
+    WITH daily_data AS (
+        SELECT 
+            date, 
+            value,
+            run_id
+        FROM `{dataset}.data`  
+    ),
+
+    centroid_data AS (
+        SELECT 
+            d.date,
+            d.value,
+            d.run_id,
+            k.CENTROID_ID
+        FROM daily_data d
+        JOIN `{dataset}.kmeans_results` k ON d.run_id = k.run_id
+    ),
+
+    percentile_data AS (
+        SELECT 
+            CENTROID_ID,
+            date,
+            PERCENTILE_CONT(value, 0.05) OVER (PARTITION BY CENTROID_ID, date) AS LowBound,
+            PERCENTILE_CONT(value, 0.95) OVER (PARTITION BY CENTROID_ID, date) AS HighBound
+        FROM centroid_data
+        GROUP BY CENTROID_ID, date, value
+    )
+
+    -- Main query to filter points outside the 90% interval
+    SELECT DISTINCT
+        cd.CENTROID_ID,
+        cd.date,
+        cd.value
+    FROM centroid_data cd
+    JOIN percentile_data pd
+    ON cd.CENTROID_ID = pd.CENTROID_ID
+    AND cd.date = pd.date
+    WHERE cd.value < pd.LowBound
+    OR cd.value > pd.HighBound
+    ORDER BY cd.CENTROID_ID, cd.date;
+
+    """
+    plt_outlying_points = client.query(get_outlying_points).result().to_dataframe()  # Execute the query to create the table
+    print("Data pulled successfully.")
+
+    # Create graph
+
+    colors = netsi.layout.colorway
+
+    fig = go.Figure()
+    fig.update_layout(
+        title={
+            'text': f"Traditional Boxplot",
+        },
+        xaxis_title="Date",
+        yaxis_title="Susceptibility",
+        
+    )
+    # fig.update_xaxes(range=[pd.Timestamp("2009-09-01"), pd.Timestamp("2010-02-17")])
+    # fig.update_yaxes(range=[0, 35000])
+
+    try:
+        plt_ftq.set_index('date', inplace=True)
+    except Exception:
+        pass
+
+    for group in plt_ftq['CENTROID_ID'].unique():
+        df_group = plt_ftq[plt_ftq['CENTROID_ID'] == group]
+
+        if full_range:
+            # FULL RANGE
+            fig.add_trace(go.Scatter(
+                name=f'Minimum',
+                x=df_group.index,
+                y=df_group['Min'],
+                marker=dict(color="#444"),
+                line=dict(width=0),
+                mode='lines',
+                showlegend=False,
+                legendgroup=str(group)  # Assign to legend group
+            ))
+            fig.add_trace(go.Scatter(
+                name=f'Full Range',
+                x=df_group.index,
+                y=df_group['Max'],
+                mode='lines',
+                marker=dict(color="#444"),
+                line=dict(width=0),
+                fillcolor=hex_to_rgba(colors[group-1], .2),
+                fill='tonexty',
+                showlegend=False,
+                legendgroup=str(group)  # Assign to legend group
+            ))
+        
+        
+        # MIDDLE 90%
+        fig.add_trace(go.Scatter(
+            name=f'Minimum',
+            x=df_group.index,
+            y=df_group['Perc5'],
+            marker=dict(color="#444"),
+            line=dict(width=0),
+            mode='lines',
+            showlegend=False,
+            legendgroup=str(group)  # Assign to legend group
+        ))
+        fig.add_trace(go.Scatter(
+            name=f'Middle 90%',
+            x=df_group.index,
+            y=df_group['Perc95'],
+            mode='lines',
+            marker=dict(color="#444"),
+            line=dict(width=0),
+            fillcolor=hex_to_rgba(colors[group-1], .2),
+            fill='tonexty',
+            showlegend=False,
+            legendgroup=str(group)  # Assign to legend group
+        ))
+        
+        # MIDDLE 50%
+        fig.add_trace(go.Scatter(
+            name=f'Minimum',
+            x=df_group.index,
+            y=df_group['Q1'],
+            marker=dict(color="#444"),
+            line=dict(width=0),
+            mode='lines',
+            showlegend=False,
+            legendgroup=str(group)  # Assign to legend group
+        ))
+        fig.add_trace(go.Scatter(
+            name=f'Group {group}',
+            x=df_group.index,
+            y=df_group['Q3'],
+            mode='lines',
+            marker=dict(color="#444"),
+            line=dict(width=0),
+            fillcolor=hex_to_rgba(colors[group-1], .3),
+            fill='tonexty',
+            showlegend=True,
+            legendgroup=str(group)  # Assign to legend group
+        ))
+        
+        
+        fig.add_trace(go.Scatter(
+            name=f'Median',
+            x=df_group.index,
+            y=df_group['Median'],
+            marker=dict(color=hex_to_rgba(colors[group-1], 1)),
+            line=dict(width=1),
+            mode='lines',
+            showlegend=False,
+            legendgroup=str(group)
+        ))
+        
+        if outlying_points:
+            fig.add_trace(go.Scatter(
+            name=f'Outlying Points',
+            x=plt_outlying_points[plt_outlying_points['CENTROID_ID'] == group]['date'],
+            y=plt_outlying_points[plt_outlying_points['CENTROID_ID'] == group]['value'],
+            mode='markers',
+            marker=dict(color=hex_to_rgba(colors[group-1], .1)),
+            showlegend=False,
+            legendgroup=str(group)  # Assign to legend group
+        ))
+        
+    return fig
