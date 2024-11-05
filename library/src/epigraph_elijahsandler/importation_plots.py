@@ -3,24 +3,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from epigraph_elijahsandler.templates import netsi
-from epigraph_elijahsandler.helper import execute
-
-def build_geographic_filter(geo_level: str, geo_values, alias: str = "g_target") -> str:
-    """Builds a geographic filter based on the provided level and values."""
-    if geo_values is not None:  # Only filter if geo_values is provided
-        if isinstance(geo_values, list):
-            if isinstance(geo_values[0], int):
-                values = ', '.join(str(val) for val in geo_values)  # For INT64
-                return f"{alias}.{geo_level} IN ({values})"
-            elif isinstance(geo_values[0], str):
-                values = ', '.join(f"'{val}'" for val in geo_values)  # For STRING
-                return f"{alias}.{geo_level} IN ({values})"
-        else:
-            if isinstance(geo_values, int):
-                return f"{alias}.{geo_level} = {geo_values}"
-            elif isinstance(geo_values, str):
-                return f"{alias}.{geo_level} = '{geo_values}'"
-    return ""  # Return empty string if no filtering is needed
+from epigraph_elijahsandler.helper import execute, build_geographic_filter
 
 def build_ap_query(table_name: str, reference_table_name: str, source_geo_level: str, 
                    target_geo_level: str, output_resolution: str = None, 

@@ -11,7 +11,7 @@ pio.templates['netsi']['layout']['title'] = dict(x=.5, y=.95, yref='container',
 pio.templates['netsi']['layout']['title']['automargin'] = True
 
 # font
-pio.templates['netsi']['layout']['font'] = dict(family='Barlow', size=14, color='black')
+pio.templates['netsi']['layout']['font'] = dict(family=r'../fonts/Barlow-Regular.ttf', size=14, color='black')
 
 # custom colors
 sequential_color_ls = ['#003f5c', '#2f4b7c', '#665191', '#a05195', '#d45087', '#f95d6a', '#ff7c43', '#ffa600']
