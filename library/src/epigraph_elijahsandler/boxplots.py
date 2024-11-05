@@ -518,8 +518,6 @@ def functional_boxplot(client, table, reference_table, target,
             showlegend=False,
             legendgroup=str(group)  # Assign to legend group
         ))
-        
-    fig.show()
 
     if delete_data:
         client.delete_dataset(
@@ -537,19 +535,19 @@ def fixed_time_boxplot(client, table, reference_table, target,
                        num_clusters=1, num_features=10, grouping_method='mse', 
                        dataset=None, delete_data=True, kmeans_table=False,
                        confidence=.9, full_range = False, outlying_points = True):
-    
-        # make sure we have a dataset name
-    if dataset == None:
-        dataset = generate_random_hash()
-        
-    # create dataset if it doesn't already exist
-    create_dataset(client, dataset)
 
     # get id of geo target
     geo_id = geography.split('_')[0]+'_id'
 
     if kmeans_table is False:
         if num_clusters > 1:
+                # make sure we have a dataset name
+            if dataset == None:
+                dataset = generate_random_hash()
+                
+            # create dataset if it doesn't already exist
+            create_dataset(client, dataset)
+
             # Step 1: Create initial data table
             query_base = f""" CREATE OR REPLACE TABLE `{dataset}.data` AS
             SELECT 
@@ -749,6 +747,14 @@ def fixed_time_boxplot(client, table, reference_table, target,
     """
     plt_outlying_points = client.query(get_outlying_points).result().to_dataframe()  # Execute the query to create the table
     print("Data pulled successfully.")
+
+    if delete_data:
+        client.delete_dataset(
+            dataset,
+            delete_contents=True,  # Set to False if you only want to delete an empty dataset
+            not_found_ok=True      # If True, no error is raised if the dataset does not exist
+        )
+        print(f"BigQuery dataset `{client.project}.{dataset}` removed successfully, or it did not exist.")
 
     # Create graph
 
