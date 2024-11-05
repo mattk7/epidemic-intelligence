@@ -8,7 +8,7 @@ import plotly.graph_objects as go
 def functional_boxplot(client, table, reference_table, target, 
                        org_geography, geography=None, geography_value=None, 
                        date_range=None, 
-                       num_clusters=1, num_features=10, grouping_method='mse', centrality_method='mse',
+                       num_clusters=1, num_features=10, grouping_method='mse', centrality_method='mse', threshold=1.5,
                        dataset=None, delete_data=True):
 
     # make sure we have a dataset name
@@ -257,8 +257,8 @@ def functional_boxplot(client, table, reference_table, target,
     JOIN iqr_bounds b
         ON d.CENTROID_ID = b.CENTROID_ID
     WHERE d.total_distance BETWEEN 
-            (b.lower_quartile - 1.5 * (b.upper_quartile - b.lower_quartile)) 
-            AND (b.upper_quartile + 1.5 * (b.upper_quartile - b.lower_quartile))
+            (b.lower_quartile - {threshold} * (b.upper_quartile - b.lower_quartile)) 
+            AND (b.upper_quartile + {threshold} * (b.upper_quartile - b.lower_quartile))
     )
 
     SELECT * FROM non_outliers;
@@ -447,7 +447,7 @@ def functional_boxplot(client, table, reference_table, target,
             name=f'Group {gr} Outlier',
             x=df_run['date'],
             y=df_run['value'],
-            marker=dict(color=hex_to_rgba(colors[gr-1], alpha=.2)),
+            marker=dict(color=hex_to_rgba(colors[gr-1], alpha=.3)),
             line=dict(width=1, dash='solid'),
             mode='lines',
             showlegend=False,
@@ -476,7 +476,7 @@ def functional_boxplot(client, table, reference_table, target,
             mode='lines',
             marker=dict(color="#444"),
             line=dict(width=0),
-            fillcolor=hex_to_rgba(colors[gr-1], alpha=.3),
+            fillcolor=hex_to_rgba(colors[group-1], alpha=.3),
             fill='tonexty',
             showlegend=False,
             legendgroup=str(group)  # Assign to legend group
@@ -501,7 +501,7 @@ def functional_boxplot(client, table, reference_table, target,
             mode='lines',
             marker=dict(color="#444"),
             line=dict(width=0),
-            fillcolor=hex_to_rgba(colors[gr-1], alpha=.3),
+            fillcolor=hex_to_rgba(colors[group-1], alpha=.3),
             fill='tonexty',
             showlegend=True,
             legendgroup=str(group)  # Assign to legend group
@@ -512,7 +512,7 @@ def functional_boxplot(client, table, reference_table, target,
             name=f'Group {group} Median',
             x=merged_curves[merged_curves['CENTROID_ID'] == group]['date'],
             y=merged_curves[merged_curves['CENTROID_ID'] == group]['median'],
-            marker=dict(color=hex_to_rgba(colors[gr-1], alpha=1)),
+            marker=dict(color=hex_to_rgba(colors[group-1], alpha=1)),
             line=dict(width=1),
             mode='lines',
             showlegend=False,
@@ -539,17 +539,15 @@ def fixed_time_boxplot(client, table, reference_table, target,
     # get id of geo target
     geo_id = geography.split('_')[0]+'_id'
 
-    if kmeans_table is False:
-        if num_clusters > 1:
-                # make sure we have a dataset name
-            if dataset == None:
-                dataset = generate_random_hash()
+    # make sure we have a dataset name
+    if dataset == None:
+        dataset = generate_random_hash()
                 
-            # create dataset if it doesn't already exist
-            create_dataset(client, dataset)
+    # create dataset if it doesn't already exist
+    create_dataset(client, dataset)
 
-            # Step 1: Create initial data table
-            query_base = f""" CREATE OR REPLACE TABLE `{dataset}.data` AS
+    # Step 1: Create initial data table
+    query_base = f""" CREATE OR REPLACE TABLE `{dataset}.data` AS
             SELECT 
                 t.date,
                 g.{geography} AS geo, 
@@ -567,8 +565,11 @@ def fixed_time_boxplot(client, table, reference_table, target,
             ORDER BY date
             ;"""
 
-            df = client.query(query_base).result()  # Execute the query to create the table
-            print("Data sliced successfully.")
+    df = client.query(query_base).result()  # Execute the query to create the table
+    print("Data sliced successfully.")
+
+    if kmeans_table is False:
+        if num_clusters > 1:
 
             # Step 2: Create the curve distance table for mse and abc
             query_distances = f"""
@@ -688,7 +689,7 @@ def fixed_time_boxplot(client, table, reference_table, target,
         CENTROID_ID,
         date,
         PERCENTILE_CONT(value, 0) OVER (PARTITION BY CENTROID_ID, date) AS Min,
-        PERCENTILE_CONT(value, {(1-confidence)}) OVER (PARTITION BY CENTROID_ID, date) AS LowBound,
+        PERCENTILE_CONT(value, {(1-confidence)/2}) OVER (PARTITION BY CENTROID_ID, date) AS LowBound,
         PERCENTILE_CONT(value, 0.25) OVER (PARTITION BY CENTROID_ID, date) AS Q1,
         PERCENTILE_CONT(value, 0.50) OVER (PARTITION BY CENTROID_ID, date) AS Median,
         PERCENTILE_CONT(value, 0.75) OVER (PARTITION BY CENTROID_ID, date) AS Q3,
@@ -725,8 +726,8 @@ def fixed_time_boxplot(client, table, reference_table, target,
         SELECT 
             CENTROID_ID,
             date,
-            PERCENTILE_CONT(value, 0.05) OVER (PARTITION BY CENTROID_ID, date) AS LowBound,
-            PERCENTILE_CONT(value, 0.95) OVER (PARTITION BY CENTROID_ID, date) AS HighBound
+            PERCENTILE_CONT(value, {(1-confidence)/2}) OVER (PARTITION BY CENTROID_ID, date) AS LowBound,
+            PERCENTILE_CONT(value, {(1+confidence)/2}) OVER (PARTITION BY CENTROID_ID, date) AS HighBound
         FROM centroid_data
         GROUP BY CENTROID_ID, date, value
     )
@@ -767,6 +768,7 @@ def fixed_time_boxplot(client, table, reference_table, target,
         },
         xaxis_title="Date",
         yaxis_title="Susceptibility",
+        template=netsi
         
     )
     # fig.update_xaxes(range=[pd.Timestamp("2009-09-01"), pd.Timestamp("2010-02-17")])
@@ -810,7 +812,7 @@ def fixed_time_boxplot(client, table, reference_table, target,
         fig.add_trace(go.Scatter(
             name=f'Minimum',
             x=df_group.index,
-            y=df_group['Perc5'],
+            y=df_group['LowBound'],
             marker=dict(color="#444"),
             line=dict(width=0),
             mode='lines',
@@ -818,9 +820,9 @@ def fixed_time_boxplot(client, table, reference_table, target,
             legendgroup=str(group)  # Assign to legend group
         ))
         fig.add_trace(go.Scatter(
-            name=f'Middle 90%',
+            name=f'Middle {confidence * 100}%',
             x=df_group.index,
-            y=df_group['Perc95'],
+            y=df_group['HighBound'],
             mode='lines',
             marker=dict(color="#444"),
             line=dict(width=0),

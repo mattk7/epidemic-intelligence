@@ -13,7 +13,7 @@ root = "src/epigraph_elijahsandler"
 
 [project]
 name = "epigraph-elijahsandler"
-version = "0.1.3"
+version = "0.1.8"
 authors = [
     { name = "Elijah Sandler", email = "sandler.e@northeastern.edu" },
 ]
