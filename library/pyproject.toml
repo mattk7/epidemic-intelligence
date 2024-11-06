@@ -3,17 +3,17 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.packages]
-include = ["epidemic_inteligence"]
+include = ["epidemic_intelligence"]
 
 [tool.hatch]
 root = "src"
 
 [tool.hatch.metadata]
-root = "src/epidemic_inteligence"
+root = "src/epidemic_intelligence"
 
 [project]
-name = "epidemic-inteligence"
-version = "0.2.0"
+name = "epidemic-intelligence"
+version = "0.2.1"
 authors = [
     { name = "Elijah Sandler", email = "sandler.e@northeastern.edu" },
 ]
