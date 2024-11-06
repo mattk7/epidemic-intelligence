@@ -5,11 +5,27 @@ import plotly.graph_objects as go
 from epigraph_elijahsandler.templates import netsi
 from epigraph_elijahsandler.helper import execute, build_geographic_filter
 
-def build_ap_query(table_name: str, reference_table_name: str, source_geo_level: str, 
+def build_ap_query(table_name: str, reference_table: str, source_geo_level: str, 
                    target_geo_level: str, output_resolution: str = None, 
                    source_values=None, target_values=None, domestic: bool = True, 
                    cutoff: float = 0.05, display: str = 'source') -> str:
-    """Builds an SQL query for analyzing importation data."""
+    """Builds an SQL query for analyzing importation data with an area plot.
+    Inputs:
+        table_name (str): BigQuery table name in "dataset.table" format containing importation data
+        reference_table (str): BigQuery table name in "dataset.table" format containing GLEAM or LEAM-US geography mappings
+        source_geo_level (str): a column in reference_table used to slice data by source, eg `region_label`
+        target_geo_level (str): a column in reference_table used to slice data by target, eg `region_label`
+        output_resolution (str): a column in reference_table, geographic resolution of resulting graph. defaults to target_geo_level
+        source_values (list or str): values of source_geo_level that will be included as source nodes, eg `Northern Europe`. set to None to include all. 
+        target_values (list or str): values of target_geo_level that will be included as target nodes, eg `Northern Europe`. set to None to include all. 
+        domestic (bool): whether or not cases originating and ending in target_values will be included
+        cutoff (float): any geography contributing under the cutoff (between 0 and 1) will be aggregated into `Other`, defaults to 0.05
+        display (str): 'source' or 'target', whether imports to targets or exports from sources will be displayed, defaults to 'source'
+    
+    Returns
+        query (str): formatted BigQuery query
+    """
+
     source_filter = build_geographic_filter(source_geo_level, source_values, alias="g_source") if source_values else 'TRUE'
     target_filter = build_geographic_filter(target_geo_level, target_values, alias="g_target") if target_values else 'TRUE'
     
@@ -28,10 +44,10 @@ def build_ap_query(table_name: str, reference_table_name: str, source_geo_level:
       FROM 
         `{table_name}` AS i
       JOIN 
-        `{reference_table_name}` AS g_source 
+        `{reference_table}` AS g_source 
         ON g_source.basin_id = i.source_basin
       JOIN 
-        `{reference_table_name}` AS g_target 
+        `{reference_table}` AS g_target 
         ON g_target.basin_id = i.target_basin
       WHERE 
         {where_clause}  
@@ -65,10 +81,10 @@ def build_ap_query(table_name: str, reference_table_name: str, source_geo_level:
     FROM 
       `{table_name}` AS i
     JOIN 
-      `{reference_table_name}` AS g_target 
+      `{reference_table}` AS g_target 
       ON g_target.basin_id = i.target_basin
     JOIN 
-      `{reference_table_name}` AS g_source 
+      `{reference_table}` AS g_source 
       ON g_source.basin_id = i.source_basin
     JOIN 
       categorized_regions cr 
@@ -93,20 +109,36 @@ def create_area_plot(data: pd.DataFrame, value: str, title: str = 'Area Plot',
                       xaxis_title=xlabel, yaxis_title=ylabel, legend_title_text=legendlabel)
     return fig
 
-def area_plot(client, table_name: str, reference_table_name: str,
+def area_plot(client, table_name: str, reference_table: str,
                                  source_geo_level: str, target_geo_level: str,
                                  output_resolution: str = None, 
                                  source_values=None, target_values=None, 
                                  domestic: bool = True, cutoff: float = 0.05,
                                  value: str = 'importations', title: str = 'Area Plot',
-                                 xlabel: str = 'Date', ylabel: str = 'Exportations', 
-                                 legendlabel: str = 'Source', display: str = 'source') -> go.Figure:
-    """Creates an area plot by executing a query based on the provided parameters."""
+                                 display: str = 'source') -> go.Figure:
+    """Creates an area plot by executing a query based on the provided parameters.
+    
+    Inputs:
+        client (google.cloud.bigquery.Client): initialized BigQuery client
+        table_name (str): BigQuery table name in "dataset.table" format containing importation data
+        reference_table (str): BigQuery table name in "dataset.table" format containing GLEAM or LEAM-US geography mappings
+        source_geo_level (str): a column in reference_table used to slice data by source, eg `region_label`
+        target_geo_level (str): a column in reference_table used to slice data by target, eg `region_label`
+        output_resolution (str): a column in reference_table, geographic resolution of resulting graph. defaults to target_geo_level
+        source_values (list or str): values of source_geo_level that will be included as source nodes, eg `Northern Europe`. set to None to include all. 
+        target_values (list or str): values of target_geo_level that will be included as target nodes, eg `Northern Europe`. set to None to include all. 
+        domestic (bool): whether or not cases originating and ending in target_values will be included
+        cutoff (float): any geography contributing under the cutoff (between 0 and 1) will be aggregated into `Other`, defaults to 0.05
+        display (str): 'source' or 'target', whether imports to targets or exports from sources will be displayed, defaults to 'source'
+        
+    Returns:
+        fig (plotly.graph_objects.Figure): formatted area plot
+    """
     
     # Step 1: Build the query
     query = build_ap_query(
         table_name=table_name,
-        reference_table_name=reference_table_name,
+        reference_table=reference_table,
         source_geo_level=source_geo_level,
         target_geo_level=target_geo_level,
         output_resolution=output_resolution,
@@ -121,11 +153,16 @@ def area_plot(client, table_name: str, reference_table_name: str,
     data = execute(client, query)
     
     # Step 3: Create the area plot
-    fig = create_area_plot(data, value=value, title=title, xlabel=xlabel, ylabel=ylabel, legendlabel=legendlabel, display=display)
+    fig = create_area_plot(data, value=value, title=title, 
+                           xlabel='Date', ylabel='Exportations' if display=='source' else 'Importations', 
+                           legendlabel=display.capitalize(), display=display)
     
     return fig
 
-def build_sankey_query(table_name, reference_table_name, source_geo_level, target_geo_level, source_values, target_values, date_range, 
+
+
+
+def build_sankey_query(table_name, reference_table, source_geo_level, target_geo_level, source_values, target_values, date_range, 
                        cutoff=0.05, source_resolution=None, target_resolution=None, domestic=True):
                        
     if source_resolution == None:
@@ -160,10 +197,10 @@ def build_sankey_query(table_name, reference_table_name, source_geo_level, targe
         FROM 
             `{table_name}` AS i
         JOIN 
-            `{reference_table_name}` AS g_target 
+            `{reference_table}` AS g_target 
             ON g_target.basin_id = i.target_basin
         JOIN 
-            `{reference_table_name}` AS g_source 
+            `{reference_table}` AS g_source 
             ON g_source.basin_id = i.source_basin
         WHERE 
             {where_clause}
@@ -178,10 +215,10 @@ def build_sankey_query(table_name, reference_table_name, source_geo_level, targe
         FROM 
             `{table_name}` AS i
         JOIN 
-            `{reference_table_name}` AS g_source
+            `{reference_table}` AS g_source
             ON g_source.basin_id = i.source_basin
         JOIN 
-            `{reference_table_name}` AS g_target 
+            `{reference_table}` AS g_target 
             ON g_target.basin_id = i.target_basin
         WHERE 
             {where_clause}
@@ -197,10 +234,10 @@ def build_sankey_query(table_name, reference_table_name, source_geo_level, targe
         FROM 
             `{table_name}` AS i
         JOIN 
-            `{reference_table_name}` AS g_target
+            `{reference_table}` AS g_target
             ON g_target.basin_id = i.target_basin
         JOIN 
-            `{reference_table_name}` AS g_source
+            `{reference_table}` AS g_source
             ON g_source.basin_id = i.source_basin
         WHERE 
             {where_clause}
@@ -252,10 +289,10 @@ def build_sankey_query(table_name, reference_table_name, source_geo_level, targe
         FROM 
             `{table_name}` AS i
         JOIN 
-            `{reference_table_name}` AS g_source
+            `{reference_table}` AS g_source
             ON g_source.basin_id = i.source_basin
         JOIN 
-            `{reference_table_name}` AS g_target
+            `{reference_table}` AS g_target
             ON g_target.basin_id = i.target_basin
         JOIN 
             categorized_sources cs
@@ -293,7 +330,7 @@ def build_sankey_query(table_name, reference_table_name, source_geo_level, targe
 
     return query
 
-def create_sankey_plot(data, title):
+def create_sankey_plot(data):
   # Create a set of unique node IDs from both sourceid and targetid
   unique_ids = set(data['sourceid']).union(set(data['targetid']))
 
@@ -327,7 +364,7 @@ def create_sankey_plot(data, title):
   ))
 
   fig.update_layout(
-      title_text = title,
+      title_text = 'Sankey Plot',
       template=netsi
       )
   
@@ -337,13 +374,32 @@ def create_sankey_plot(data, title):
 
   return fig
 
-def sankey(client, table_name, reference_table_name, source_geo_level, target_geo_level, source_values, target_values, date_range, 
-           cutoff=0.05, source_resolution=None, target_resolution=None, domestic=True, title="Sankey Diagram"):
+def sankey(client, table_name, reference_table, source_geo_level, target_geo_level, source_values, target_values, date_range, 
+           cutoff=0.05, source_resolution=None, target_resolution=None, domestic=True):
+    """ Creates a sankey diagram to show flow of cases.
+     
+    Inputs:
+        client (google.cloud.bigquery.Client): initialized BigQuery client
+        table_name (str): BigQuery table name in "dataset.table" format containing importation data
+        reference_table (str): BigQuery table name in "dataset.table" format containing GLEAM or LEAM-US geography mappings
+        source_geo_level (str): a column in reference_table used to slice data by source, eg `region_label`
+        target_geo_level (str): a column in reference_table used to slice data by target, eg `region_label`
+        source_resolution (str): a column in reference_table, geographic resolution of source nodes. defaults to source_geo_level
+        target_resolution (str): a column in reference_table, geographic resolution of target nodes. defaults to target_geo_level
+        source_values (list or str): values of source_geo_level that will be included as source nodes, eg `Northern Europe`. set to None to include all. 
+        target_values (list or str): values of target_geo_level that will be included as target nodes, eg `Northern Europe`. set to None to include all. 
+        date_range (list of str): range of dates, inclusive, that will be visualized. formatted as 'YYYY-MM-DD'
+        domestic (bool): whether or not cases originating and ending in target_values will be included
+        cutoff (float): any source or target geography contributing under the cutoff (between 0 and 1) will be aggregated into `Other`, defaults to 0.05
+        
+    Returns:
+        fig (plotly.graph_objects.Figure): formatted sankey diagram
+    """
     
     # Generate the query
     query = build_sankey_query(
         table_name=table_name,
-        reference_table_name=reference_table_name,
+        reference_table=reference_table,
         source_geo_level=source_geo_level,
         target_geo_level=target_geo_level,
         source_values=source_values,
@@ -359,10 +415,15 @@ def sankey(client, table_name, reference_table_name, source_geo_level, target_ge
     data = execute(client, query)
     
     # Create and return the Sankey plot
-    return create_sankey_plot(data, title)
+    return create_sankey_plot(data)
 
-def build_bar_query(table_name, reference_table_name, source_geo_level, target_geo_level, source_values, target_values, date_range, 
+
+
+
+
+def build_bar_query(table_name, reference_table, source_geo_level, target_geo_level, source_values, target_values, date_range, 
                        cutoff=0.05, target_resolution=None, domestic=True, n=20):
+        
     if target_resolution == None:
         target_resolution = target_geo_level
                        
@@ -393,10 +454,10 @@ def build_bar_query(table_name, reference_table_name, source_geo_level, target_g
             FROM 
                 `{table_name}` AS i
             JOIN 
-                `{reference_table_name}` AS g_target 
+                `{reference_table}` AS g_target 
                 ON g_target.basin_id = i.target_basin
             JOIN 
-                `{reference_table_name}` AS g_source 
+                `{reference_table}` AS g_source 
                 ON g_source.basin_id = i.source_basin
             WHERE 
                 {where_clause}
@@ -412,10 +473,10 @@ def build_bar_query(table_name, reference_table_name, source_geo_level, target_g
             FROM 
                 `{table_name}` AS i
             JOIN 
-                `{reference_table_name}` AS g_target
+                `{reference_table}` AS g_target
                 ON g_target.basin_id = i.target_basin
             JOIN 
-                `{reference_table_name}` AS g_source
+                `{reference_table}` AS g_source
                 ON g_source.basin_id = i.source_basin
             WHERE 
                 {where_clause}
@@ -495,15 +556,35 @@ def create_bar_chart(data: pd.DataFrame, title: str = 'Relative Risk of Importat
 
     return fig
 
-def relative_risk(client, table_name, reference_table_name, source_geo_level, target_geo_level, source_values, target_values, date_range, 
+def relative_risk(client, table_name, reference_table, source_geo_level, target_geo_level, source_values, target_values, date_range, 
            cutoff=0.05, n=20, target_resolution=None, domestic=True, 
            title="Relative Risk of Importation", xlabel="Relative Risk of Importation", 
            ylabel=None):
+    
+    """ Creates a sankey diagram to show flow of cases.
+     
+    Inputs:
+        client (google.cloud.bigquery.Client): initialized BigQuery client
+        table_name (str): BigQuery table name in "dataset.table" format containing importation data
+        reference_table (str): BigQuery table name in "dataset.table" format containing GLEAM or LEAM-US geography mappings
+        source_geo_level (str): a column in reference_table used to slice data by source, eg `region_label`
+        target_geo_level (str): a column in reference_table used to slice data by target, eg `region_label`
+        source_values (list or str): values of source_geo_level that will be included as source nodes, eg `Northern Europe`. set to None to include all. 
+        target_values (list or str): values of target_geo_level that will be included as target nodes, eg `Northern Europe`. set to None to include all. 
+        target_resolution (str): a column in reference_table, geographic resolution of target nodes. defaults to target_geo_level
+        date_range (list of str): range of dates, inclusive, that will be visualized. formatted as 'YYYY-MM-DD'
+        domestic (bool): whether or not cases originating and ending in target_values will be included
+        cutoff (float): any source or target geography contributing under the cutoff (between 0 and 1) will be aggregated into `Other`, defaults to 0.05
+        n (int > 0): maximum number of rows to be displayed. all other rows will be aggregated into other, regardless of cutoff
+        
+    Returns:
+        fig (plotly.graph_objects.Figure): formatted relative risk chart
+    """
 
     # Generate the query
     query = build_bar_query(
         table_name=table_name,
-        reference_table_name=reference_table_name,
+        reference_table=reference_table,
         source_geo_level=source_geo_level,
         target_geo_level=target_geo_level,
         source_values=source_values,

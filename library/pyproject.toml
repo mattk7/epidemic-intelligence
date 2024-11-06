@@ -13,7 +13,7 @@ root = "src/epigraph_elijahsandler"
 
 [project]
 name = "epigraph-elijahsandler"
-version = "0.1.8"
+version = "0.1.10"
 authors = [
     { name = "Elijah Sandler", email = "sandler.e@northeastern.edu" },
 ]
@@ -30,8 +30,9 @@ dependencies = [
   "pandas>2.1.0",
   "plotly>5.24",
   "google-cloud-bigquery>3.0.0",
+  "google-cloud-bigquery-storage>2.0.0",
   "matplotlib>3.7.0",
-  "kaleido>0.1.0",
+  "kaleido==0.1.0.post1",
   "db-dtypes>1.0.0"
 ]
 
