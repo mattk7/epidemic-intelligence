@@ -8,7 +8,8 @@ from epidemic_intelligence.helper import execute, build_geographic_filter
 def build_ap_query(table_name: str, reference_table: str, source_geo_level: str, 
                    target_geo_level: str, output_resolution: str = None, 
                    source_values=None, target_values=None, domestic: bool = True, 
-                   cutoff: float = 0.05, display: str = 'source') -> str:
+                   cutoff: float = 0.05, display: str = "source", value: str = "importations", 
+                   date: str = 'day') -> str:
     """Builds an SQL query for analyzing importation data with an area plot.
     Inputs:
         table_name (str): BigQuery table name in "dataset.table" format containing importation data
@@ -20,27 +21,28 @@ def build_ap_query(table_name: str, reference_table: str, source_geo_level: str,
         target_values (list or str): values of target_geo_level that will be included as target nodes, eg `Northern Europe`. set to None to include all. 
         domestic (bool): whether or not cases originating and ending in target_values will be included
         cutoff (float): any geography contributing under the cutoff (between 0 and 1) will be aggregated into `Other`, defaults to 0.05
-        display (str): 'source' or 'target', whether imports to targets or exports from sources will be displayed, defaults to 'source'
+        display (str): "source" or "target", whether imports to targets or exports from sources will be displayed, defaults to "source"
+        date (str): time series aggregation method, "day" for by day, "iso" for by ISO week. 
     
     Returns
         query (str): formatted BigQuery query
     """
 
-    source_filter = build_geographic_filter(source_geo_level, source_values, alias="g_source") if source_values else 'TRUE'
-    target_filter = build_geographic_filter(target_geo_level, target_values, alias="g_target") if target_values else 'TRUE'
+    source_filter = build_geographic_filter(source_geo_level, source_values, alias="g_source") if source_values else "TRUE"
+    target_filter = build_geographic_filter(target_geo_level, target_values, alias="g_target") if target_values else "TRUE"
     
     where_clauses = [target_filter, source_filter]
     
     if not domestic:
         where_clauses.append(f"g_source.{target_geo_level} <> g_target.{target_geo_level}")
 
-    where_clause = ' AND '.join(where_clauses)
+    where_clause = " AND ".join(where_clauses)
 
     query = f"""
     WITH region_imports AS (
       SELECT 
         g_{display}.{output_resolution} AS {display}_label, 
-        SUM(i.importations) AS total_importations
+        SUM(i.{value}) AS total_importations
       FROM 
         `{table_name}` AS i
       JOIN 
@@ -63,7 +65,7 @@ def build_ap_query(table_name: str, reference_table: str, source_geo_level: str,
       SELECT 
         r.{display}_label,
         CASE 
-          WHEN r.total_importations < ({cutoff} * (SELECT grand_total_importations FROM total_imports)) THEN 'Other'
+          WHEN r.total_importations < ({cutoff} * (SELECT grand_total_importations FROM total_imports)) THEN "Other"
           ELSE r.{display}_label
         END AS categorized_label
       FROM 
@@ -71,7 +73,7 @@ def build_ap_query(table_name: str, reference_table: str, source_geo_level: str,
     )
     SELECT 
       cr.categorized_label AS {display}, 
-      i.date, 
+      {"CAST(EXTRACT(ISOYEAR FROM i.date) AS STRING) || 'W' || LPAD(CAST(EXTRACT(ISOWEEK FROM i.date) AS STRING), 2, '0')" if date=='iso' else 'i.date'} AS date, 
       SUM(i.importations) AS importations,
       AVG(SUM(i.importations)) OVER (
         PARTITION BY cr.categorized_label 
@@ -99,13 +101,13 @@ def build_ap_query(table_name: str, reference_table: str, source_geo_level: str,
     """
     return query
 
-def create_area_plot(data: pd.DataFrame, value: str, title: str = 'Area Plot', 
-                     xlabel: str = 'Date', ylabel: str = 'Exportations', 
-                     legendlabel: str = 'Source', display: str = 'source') -> go.Figure:
+def create_area_plot(data: pd.DataFrame, value: str, title: str = "Area Plot", 
+                     xlabel: str = "Date", ylabel: str = "Exportations", 
+                     legendlabel: str = "Source", display: str = "source") -> go.Figure:
     """Creates an area plot using the provided data."""
-    fig = px.area(data, x='date', y=value, color=display, template=netsi)
+    fig = px.area(data, x="date", y=value, color=display, template=netsi)
     fig.update_traces(line=dict(width=0.4))
-    fig.update_layout(title_text=title, legend_traceorder='reversed',
+    fig.update_layout(title_text=title, legend_traceorder="reversed",
                       xaxis_title=xlabel, yaxis_title=ylabel, legend_title_text=legendlabel)
     return fig
 
@@ -114,8 +116,8 @@ def area_plot(client, table_name: str, reference_table: str,
                                  output_resolution: str = None, 
                                  source_values=None, target_values=None, 
                                  domestic: bool = True, cutoff: float = 0.05,
-                                 value: str = 'importations', title: str = 'Area Plot',
-                                 display: str = 'source') -> go.Figure:
+                                 value: str = "importations", title: str = "Area Plot",
+                                 display: str = "source") -> go.Figure:
     """Creates an area plot by executing a query based on the provided parameters.
     
     Inputs:
@@ -129,7 +131,7 @@ def area_plot(client, table_name: str, reference_table: str,
         target_values (list or str): values of target_geo_level that will be included as target nodes, eg `Northern Europe`. set to None to include all. 
         domestic (bool): whether or not cases originating and ending in target_values will be included
         cutoff (float): any geography contributing under the cutoff (between 0 and 1) will be aggregated into `Other`, defaults to 0.05
-        display (str): 'source' or 'target', whether imports to targets or exports from sources will be displayed, defaults to 'source'
+        display (str): "source" or "target", whether imports to targets or exports from sources will be displayed, defaults to "source"
         
     Returns:
         fig (plotly.graph_objects.Figure): formatted area plot
@@ -146,7 +148,8 @@ def area_plot(client, table_name: str, reference_table: str,
         target_values=target_values,
         domestic=domestic,
         cutoff=cutoff,
-        display=display
+        display=display,
+        value=value
     )
     
     # Step 2: Execute the query
@@ -154,16 +157,22 @@ def area_plot(client, table_name: str, reference_table: str,
     
     # Step 3: Create the area plot
     fig = create_area_plot(data, value=value, title=title, 
-                           xlabel='Date', ylabel='Exportations' if display=='source' else 'Importations', 
+                           xlabel="Date", ylabel="Exportations" if display=="source" else "Importations", 
                            legendlabel=display.capitalize(), display=display)
     
     return fig
 
+def fetch_area_plot_data(fig):
+    df = pd.DataFrame()
+    for trace in fig.data:
+        dct = pd.DataFrame({trace.legendgroup: trace.y}, index=trace.x)
+        df = pd.concat([df, dct], axis=1)
 
+    return df
 
 
 def build_sankey_query(table_name, reference_table, source_geo_level, target_geo_level, source_values, target_values, date_range, 
-                       cutoff=0.05, source_resolution=None, target_resolution=None, domestic=True):
+                       value, cutoff=0.05, source_resolution=None, target_resolution=None, domestic=True):
                        
     if source_resolution == None:
         source_resolution = source_geo_level
@@ -186,14 +195,14 @@ def build_sankey_query(table_name, reference_table, source_geo_level, target_geo
         # Exclude rows where target imports to itself
         where_clauses.append(f"g_source.{target_resolution} != g_target.{target_resolution}")
 
-    # Join the where clauses with 'AND'
-    where_clause = ' AND '.join(where_clauses)
+    # Join the where clauses with "AND"
+    where_clause = " AND ".join(where_clauses)
 
     query = f"""
     WITH total_exportations AS (
         -- Calculate total exportations for the given date range
         SELECT 
-            SUM(i.importations) AS total_sum
+            SUM(i.{value}) AS total_sum
         FROM 
             `{table_name}` AS i
         JOIN 
@@ -204,12 +213,12 @@ def build_sankey_query(table_name, reference_table, source_geo_level, target_geo
             ON g_source.basin_id = i.source_basin
         WHERE 
             {where_clause}
-            AND i.date >= '{date_range[0]}'
-            AND i.date <= '{date_range[1]}'
+            AND i.date >= "{date_range[0]}"
+            AND i.date <= "{date_range[1]}"
     ), source_totals AS (
         -- Calculate total exportations for each source
         SELECT
-            g_source.{source_resolution.split('_')[0]+'_id'} * -1 AS sourceid,
+            g_source.{source_resolution.split("_")[0]+"_id"} * -1 AS sourceid,
             g_source.{source_resolution} AS source,
             SUM(i.importations) AS source_sum
         FROM 
@@ -222,13 +231,13 @@ def build_sankey_query(table_name, reference_table, source_geo_level, target_geo
             ON g_target.basin_id = i.target_basin
         WHERE 
             {where_clause}
-            AND i.date >= '{date_range[0]}'
-            AND i.date <= '{date_range[1]}'
+            AND i.date >= "{date_range[0]}"
+            AND i.date <= "{date_range[1]}"
         GROUP BY sourceid, source
     ), target_totals AS (
         -- Calculate total exportations for each target
         SELECT
-            g_target.{target_resolution.split('_')[0]+'_id'} AS targetid,
+            g_target.{target_resolution.split("_")[0]+"_id"} AS targetid,
             g_target.{target_resolution} AS target,
             SUM(i.importations) AS target_sum
         FROM 
@@ -241,8 +250,8 @@ def build_sankey_query(table_name, reference_table, source_geo_level, target_geo
             ON g_source.basin_id = i.source_basin
         WHERE 
             {where_clause}
-            AND i.date >= '{date_range[0]}'
-            AND i.date <= '{date_range[1]}'
+            AND i.date >= "{date_range[0]}"
+            AND i.date <= "{date_range[1]}"
         GROUP BY targetid, target
     ), categorized_sources AS (
         -- Categorize sources contributing less than the cutoff as "Other"
@@ -253,7 +262,7 @@ def build_sankey_query(table_name, reference_table, source_geo_level, target_geo
                 ELSE st.sourceid
             END AS revisedsourceid,
             CASE 
-                WHEN st.source_sum < {cutoff} * t.total_sum THEN 'Other'
+                WHEN st.source_sum < {cutoff} * t.total_sum THEN "Other"
                 ELSE st.source
             END AS source
         FROM 
@@ -269,7 +278,7 @@ def build_sankey_query(table_name, reference_table, source_geo_level, target_geo
                 ELSE tt.targetid
             END AS revisedtargetid,
             CASE 
-                WHEN tt.target_sum < {cutoff} * t.total_sum THEN 'Other'
+                WHEN tt.target_sum < {cutoff} * t.total_sum THEN "Other"
                 ELSE tt.target
             END AS target
         FROM 
@@ -296,14 +305,14 @@ def build_sankey_query(table_name, reference_table, source_geo_level, target_geo
             ON g_target.basin_id = i.target_basin
         JOIN 
             categorized_sources cs
-            ON cs.sourceid = g_source.{source_resolution.split('_')[0]+'_id'} * -1
+            ON cs.sourceid = g_source.{source_resolution.split("_")[0]+"_id"} * -1
         JOIN 
             categorized_targets ct
-            ON ct.targetid = g_target.{target_resolution.split('_')[0]+'_id'}
+            ON ct.targetid = g_target.{target_resolution.split("_")[0]+"_id"}
         WHERE 
             {where_clause}
-            AND i.date >= '{date_range[0]}'
-            AND i.date <= '{date_range[1]}'
+            AND i.date >= "{date_range[0]}"
+            AND i.date <= "{date_range[1]}"
         GROUP BY 
             cs.sourceid, 
             cs.revisedsourceid,
@@ -332,7 +341,7 @@ def build_sankey_query(table_name, reference_table, source_geo_level, target_geo
 
 def create_sankey_plot(data):
   # Create a set of unique node IDs from both sourceid and targetid
-  unique_ids = set(data['sourceid']).union(set(data['targetid']))
+  unique_ids = set(data["sourceid"]).union(set(data["targetid"]))
 
   # Create mapping for indices
   dict_indices = {id_: idx for idx, id_ in enumerate(unique_ids)}
@@ -340,20 +349,20 @@ def create_sankey_plot(data):
   # Create mapping for labels (using the first occurrence of each name)
   name_mapping = {}
   for idx, row in data.iterrows():
-      name_mapping[row['sourceid']] = row['source']
-      name_mapping[row['targetid']] = row['target']
+      name_mapping[row["sourceid"]] = row["source"]
+      name_mapping[row["targetid"]] = row["target"]
 
   # Generate source, target, and value lists for the Sankey diagram
-  source = data['sourceid'].map(dict_indices)
-  target = data['targetid'].map(dict_indices)
-  value = data['exportations']
+  source = data["sourceid"].map(dict_indices)
+  target = data["targetid"].map(dict_indices)
+  value = data["exportations"]
 
   # Create Sankey diagram
   fig = go.Figure(go.Sankey(
       node=dict(
           pad=15,
           thickness=20,
-          line=dict(color='black', width=0.3),
+          line=dict(color="black", width=0.3),
           label=[name_mapping[id_] for id_ in dict_indices.keys()],  # Use names as node labels
       ),
       link=dict(
@@ -364,17 +373,17 @@ def create_sankey_plot(data):
   ))
 
   fig.update_layout(
-      title_text = 'Sankey Plot',
+      title_text = "Sankey Plot",
       template=netsi
       )
   
   # convert values to percentages and other formatting
-  fig.data[0]['valueformat'] = '.1%'
-  fig.data[0].node['line']['width'] = 0
+  fig.data[0]["valueformat"] = ".1%"
+  fig.data[0].node["line"]["width"] = 0
 
   return fig
 
-def sankey(client, table_name, reference_table, source_geo_level, target_geo_level, source_values, target_values, date_range, 
+def sankey(client, table_name, reference_table, source_geo_level, target_geo_level, source_values, target_values, date_range, value="importations",
            cutoff=0.05, source_resolution=None, target_resolution=None, domestic=True):
     """ Creates a sankey diagram to show flow of cases.
      
@@ -388,7 +397,7 @@ def sankey(client, table_name, reference_table, source_geo_level, target_geo_lev
         target_resolution (str): a column in reference_table, geographic resolution of target nodes. defaults to target_geo_level
         source_values (list or str): values of source_geo_level that will be included as source nodes, eg `Northern Europe`. set to None to include all. 
         target_values (list or str): values of target_geo_level that will be included as target nodes, eg `Northern Europe`. set to None to include all. 
-        date_range (list of str): range of dates, inclusive, that will be visualized. formatted as 'YYYY-MM-DD'
+        date_range (list of str): range of dates, inclusive, that will be visualized. formatted as "YYYY-MM-DD"
         domestic (bool): whether or not cases originating and ending in target_values will be included
         cutoff (float): any source or target geography contributing under the cutoff (between 0 and 1) will be aggregated into `Other`, defaults to 0.05
         
@@ -408,7 +417,8 @@ def sankey(client, table_name, reference_table, source_geo_level, target_geo_lev
         cutoff=cutoff,
         source_resolution=source_resolution,
         target_resolution=target_resolution,
-        domestic=domestic
+        domestic=domestic,
+        value=value
     )
     
     # Execute the query to get the data
@@ -417,11 +427,17 @@ def sankey(client, table_name, reference_table, source_geo_level, target_geo_lev
     # Create and return the Sankey plot
     return create_sankey_plot(data)
 
+def fetch_sankey_data(fig):
+    source = fig.data[0].link.source
+    target = fig.data[0].link.target
+    value = fig.data[0].link.value
+    df = pd.DataFrame({'source': source, 'target': target, 'value': value})
+    df[['source', 'target']] = df[['source', 'target']].replace(dict(enumerate(fig.data[0].node.label)))
+    return df
 
 
 
-
-def build_bar_query(table_name, reference_table, source_geo_level, target_geo_level, source_values, target_values, date_range, 
+def build_bar_query(table_name, reference_table, source_geo_level, target_geo_level, source_values, target_values, date_range, value,
                        cutoff=0.05, target_resolution=None, domestic=True, n=20):
         
     if target_resolution == None:
@@ -443,14 +459,14 @@ def build_bar_query(table_name, reference_table, source_geo_level, target_geo_le
         # Exclude rows where target imports to itself
         where_clauses.append(f"g_source.{target_resolution} != g_target.{target_resolution}")
         
-    # Join the where clauses with 'AND'
-    where_clause = ' AND '.join(where_clauses)
+    # Join the where clauses with "AND"
+    where_clause = " AND ".join(where_clauses)
         
     query = f"""
         WITH total_exportations AS (
             -- Calculate total exportations for the given date range
             SELECT 
-                SUM(i.importations) AS total_sum
+                SUM(i.{value}) AS total_sum
             FROM 
                 `{table_name}` AS i
             JOIN 
@@ -461,13 +477,13 @@ def build_bar_query(table_name, reference_table, source_geo_level, target_geo_le
                 ON g_source.basin_id = i.source_basin
             WHERE 
                 {where_clause}
-                AND i.date >= '{date_range[0]}'
-                AND i.date <= '{date_range[1]}'
+                AND i.date >= "{date_range[0]}"
+                AND i.date <= "{date_range[1]}"
         ), 
         target_totals AS (
             -- Calculate total exportations for each target
             SELECT
-                g_target.{target_resolution.split('_')[0]+'_id'} AS targetid,
+                g_target.{target_resolution.split("_")[0]+"_id"} AS targetid,
                 g_target.{target_resolution} AS target,
                 SUM(i.importations) AS target_sum
             FROM 
@@ -480,8 +496,8 @@ def build_bar_query(table_name, reference_table, source_geo_level, target_geo_le
                 ON g_source.basin_id = i.source_basin
             WHERE 
                 {where_clause}
-                AND i.date >= '{date_range[0]}'
-                AND i.date <= '{date_range[1]}'
+                AND i.date >= "{date_range[0]}"
+                AND i.date <= "{date_range[1]}"
             GROUP BY targetid, target
             ORDER BY target_sum DESC
         ), ranked_targets AS (
@@ -503,8 +519,8 @@ def build_bar_query(table_name, reference_table, source_geo_level, target_geo_le
                 ELSE rt.targetid
             END AS revisedtargetid,
             CASE 
-                WHEN rt.target_sum < {cutoff} * t.total_sum THEN 'Other'
-                WHEN rt.rank >= {n} THEN 'Other'
+                WHEN rt.target_sum < {cutoff} * t.total_sum THEN "Other"
+                WHEN rt.rank >= {n} THEN "Other"
                 ELSE rt.target
             END AS target,
             rt.target_sum
@@ -530,33 +546,33 @@ def build_bar_query(table_name, reference_table, source_geo_level, target_geo_le
     
     return query
 
-def create_bar_chart(data: pd.DataFrame, title: str = 'Relative Risk of Importation', 
-                     xlabel: str = 'Relative Risk of Importation', ylabel: str = 'Geography'):
+def create_bar_chart(data: pd.DataFrame, title: str = "Relative Risk of Importation", 
+                     xlabel: str = "Relative Risk of Importation", ylabel: str = "Geography"):
     fig = px.bar(
-    data.iloc[:, :], x='total_importations', y='target', orientation='h', 
+    data.iloc[:, :], x="total_importations", y="target", orientation="h", 
     labels={
-        'target': 'Target',
-        'total_importations': 'Relative Risk of Importation'
+        "target": "Target",
+        "total_importations": "Relative Risk of Importation"
     },
-    template='netsi'
+    template="netsi"
 )
 
 # Sort y-axis by exportations with "Other" fixed at the bottom
     fig.update_layout(
-        yaxis={'categoryorder': 'array', 'categoryarray': ['Other'] + sorted(
-            [x for x in data['target'].unique() if x != 'Other'],
-            key=lambda target: data.loc[data['target'] == target, 'total_importations'].sum(),
+        yaxis={"categoryorder": "array", "categoryarray": ["Other"] + sorted(
+            [x for x in data["target"].unique() if x != "Other"],
+            key=lambda target: data.loc[data["target"] == target, "total_importations"].sum(),
             reverse=False
         )},
         title={
-            'text': title
+            "text": title
             },
         showlegend=False
     )
 
     return fig
 
-def relative_risk(client, table_name, reference_table, source_geo_level, target_geo_level, source_values, target_values, date_range, 
+def relative_risk(client, table_name, reference_table, source_geo_level, target_geo_level, source_values, target_values, date_range, value="importations",
            cutoff=0.05, n=20, target_resolution=None, domestic=True, 
            title="Relative Risk of Importation", xlabel="Relative Risk of Importation", 
            ylabel=None):
@@ -572,7 +588,7 @@ def relative_risk(client, table_name, reference_table, source_geo_level, target_
         source_values (list or str): values of source_geo_level that will be included as source nodes, eg `Northern Europe`. set to None to include all. 
         target_values (list or str): values of target_geo_level that will be included as target nodes, eg `Northern Europe`. set to None to include all. 
         target_resolution (str): a column in reference_table, geographic resolution of target nodes. defaults to target_geo_level
-        date_range (list of str): range of dates, inclusive, that will be visualized. formatted as 'YYYY-MM-DD'
+        date_range (list of str): range of dates, inclusive, that will be visualized. formatted as "YYYY-MM-DD"
         domestic (bool): whether or not cases originating and ending in target_values will be included
         cutoff (float): any source or target geography contributing under the cutoff (between 0 and 1) will be aggregated into `Other`, defaults to 0.05
         n (int > 0): maximum number of rows to be displayed. all other rows will be aggregated into other, regardless of cutoff
@@ -593,7 +609,8 @@ def relative_risk(client, table_name, reference_table, source_geo_level, target_
         cutoff=cutoff,
         target_resolution=target_resolution,
         domestic=domestic,
-        n=n
+        n=n,
+        value=value
     )
     
     # Execute the query to get the data
