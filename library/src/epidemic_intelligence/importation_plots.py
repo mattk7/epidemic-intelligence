@@ -3,13 +3,14 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from epidemic_intelligence.templates import netsi
-from epidemic_intelligence.helper import execute, build_geographic_filter
+from epidemic_intelligence.helper import execute, build_geographic_filter, build_categorical_filter
 
 def build_ap_query(table_name: str, reference_table: str, source_geo_level: str, 
                    target_geo_level: str, output_resolution: str = None, 
                    source_values=None, target_values=None, domestic: bool = True, 
                    cutoff: float = 0.05, display: str = "source", value: str = "importations", 
-                   date: str = 'day') -> str:
+                   date: str = 'day',
+                   categories=None) -> str:
     """Builds an SQL query for analyzing importation data with an area plot.
     Inputs:
         table_name (str): BigQuery table name in "dataset.table" format containing importation data
@@ -28,10 +29,11 @@ def build_ap_query(table_name: str, reference_table: str, source_geo_level: str,
         query (str): formatted BigQuery query
     """
 
-    source_filter = build_geographic_filter(source_geo_level, source_values, alias="g_source") if source_values else "TRUE"
-    target_filter = build_geographic_filter(target_geo_level, target_values, alias="g_target") if target_values else "TRUE"
+    source_filter = build_geographic_filter(source_geo_level, source_values, alias="g_source") if source_values is not None else "TRUE"
+    target_filter = build_geographic_filter(target_geo_level, target_values, alias="g_target") if target_values is not None else  "TRUE"
+    cat_filter = build_categorical_filter(categories) if categories is not None else "TRUE"
     
-    where_clauses = [target_filter, source_filter]
+    where_clauses = [target_filter, source_filter, cat_filter]
     
     if not domestic:
         where_clauses.append(f"g_source.{target_geo_level} <> g_target.{target_geo_level}")
@@ -172,7 +174,8 @@ def fetch_area_plot_data(fig):
 
 
 def build_sankey_query(table_name, reference_table, source_geo_level, target_geo_level, source_values, target_values, date_range, 
-                       value, cutoff=0.05, source_resolution=None, target_resolution=None, domestic=True):
+                       value, cutoff=0.05, source_resolution=None, target_resolution=None, domestic=True,
+                       n_sources=100, n_targets=100):
                        
     if source_resolution == None:
         source_resolution = source_geo_level
@@ -240,6 +243,7 @@ def build_sankey_query(table_name, reference_table, source_geo_level, target_geo
             g_target.{target_resolution.split("_")[0]+"_id"} AS targetid,
             g_target.{target_resolution} AS target,
             SUM(i.importations) AS target_sum
+            
         FROM 
             `{table_name}` AS i
         JOIN 
@@ -253,20 +257,39 @@ def build_sankey_query(table_name, reference_table, source_geo_level, target_geo
             AND i.date >= "{date_range[0]}"
             AND i.date <= "{date_range[1]}"
         GROUP BY targetid, target
+    ), ranked_targets AS (
+        -- Rank targets based on their target_sum
+        SELECT 
+            tt.targetid,
+            tt.target,
+            tt.target_sum,
+            ROW_NUMBER() OVER (ORDER BY tt.target_sum DESC) AS rank
+        FROM 
+            target_totals tt
+    ), ranked_sources AS (
+        SELECT 
+            st.sourceid,
+            st.source,
+            st.source_sum,
+            ROW_NUMBER() OVER (ORDER BY st.source_sum DESC) AS rank
+        FROM 
+            source_totals st
     ), categorized_sources AS (
         -- Categorize sources contributing less than the cutoff as "Other"
         SELECT 
             st.sourceid,
             CASE 
                 WHEN st.source_sum < {cutoff} * t.total_sum THEN -1.5
+                WHEN st.rank >= {n_sources} THEN -1.5
                 ELSE st.sourceid
             END AS revisedsourceid,
             CASE 
                 WHEN st.source_sum < {cutoff} * t.total_sum THEN "Other"
+                WHEN st.rank >= {n_sources} THEN "Other"
                 ELSE st.source
             END AS source
         FROM 
-            source_totals st
+            ranked_sources st
         CROSS JOIN 
             total_exportations t
     ), categorized_targets AS (
@@ -275,14 +298,16 @@ def build_sankey_query(table_name, reference_table, source_geo_level, target_geo
             tt.targetid,
             CASE 
                 WHEN tt.target_sum < {cutoff} * t.total_sum THEN 1.5
+                WHEN st.rank >= {n_targets} THEN 1.5
                 ELSE tt.targetid
             END AS revisedtargetid,
             CASE 
                 WHEN tt.target_sum < {cutoff} * t.total_sum THEN "Other"
+                WHEN st.rank >= {n_targets} THEN "Other"
                 ELSE tt.target
             END AS target
         FROM 
-            target_totals tt
+            ranked_targets tt
         CROSS JOIN 
             total_exportations t
     ), final_exportations AS (
@@ -384,7 +409,8 @@ def create_sankey_plot(data):
   return fig
 
 def sankey(client, table_name, reference_table, source_geo_level, target_geo_level, source_values, target_values, date_range, value="importations",
-           cutoff=0.05, source_resolution=None, target_resolution=None, domestic=True):
+           cutoff=0.05, source_resolution=None, target_resolution=None, domestic=True,
+           n_sources=None, n_targets=None):
     """ Creates a sankey diagram to show flow of cases.
      
     Inputs:
@@ -418,7 +444,9 @@ def sankey(client, table_name, reference_table, source_geo_level, target_geo_lev
         source_resolution=source_resolution,
         target_resolution=target_resolution,
         domestic=domestic,
-        value=value
+        value=value,
+        n_sources=n_sources,
+        n_targets=n_targets
     )
     
     # Execute the query to get the data

@@ -29,3 +29,13 @@ pio.templates['netsi']['layout']['colorway'] = ['#428299', '#F48A64', '#77C6B1',
                                                 '#F2D65F', '#80A4CE', '#CC9EB1', '#BFD88F', '#8E8E8E']
 
 netsi = pio.templates['netsi']
+
+# alessandra's color palettes
+## continuous color scales
+greenish = ['#1B6874', '#358F93', '#6CC2BD', '#BCE4DF', '#E2F2F1']
+def get_greenish(level):
+    assert level < len(greenish), f'level must be between 0 and {len(greenish)-1}'
+    return ['#FFFFFF', greenish[level]]
+
+## diverging
+marton = ['#FFA982','#FFCE87','#FFE79C','#FFFFB7','#FFFFD5','#E5FFD4','#C4E3D0','#A7C6CE','#7F9ECE']

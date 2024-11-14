@@ -58,6 +58,22 @@ def build_geographic_filter(geo_level: str, geo_values, alias: str = "g_target")
                 return f"{alias}.{geo_level} = '{geo_values}'"
     return ""  # Return empty string if no filtering is needed
 
+def build_categorical_filter(categories, category_col: str = 'category', alias: str = "g_target") -> str:
+    if categories is not None:  # Only filter if geo_values is provided
+        if isinstance(categories, list):
+            if isinstance(categories[0], int):
+                values = ', '.join(str(val) for val in categories)  # For INT64
+                return f"{alias}.{category_col} IN ({values})"
+            elif isinstance(categories[0], str):
+                values = ', '.join(f"'{val}'" for val in categories)  # For STRING
+                return f"{alias}.{category_col} IN ({values})"
+        else:
+            if isinstance(categories, int):
+                return f"{alias}.{category_col} = {categories}"
+            elif isinstance(categories, str):
+                return f"{alias}.{category_col} = '{categories}'"
+    return ""  # Return empty string if no filtering is needed
+
 def hex_to_rgba(hex_code, alpha):
     # Remove the "#" if it's there
     hex_code = hex_code.lstrip('#')
