@@ -7,10 +7,12 @@ from epidemic_intelligence.helper import execute, build_geographic_filter, build
 
 def build_ap_query(table_name: str, reference_table: str, source_geo_level: str, 
                    target_geo_level: str, output_resolution: str = None, 
-                   source_values=None, target_values=None, domestic: bool = True, 
+                   source_values=None, target_values=None, 
+                   source_col='source_basin', target_col='target_basin', reference_col='basin_id',
+                    
                    cutoff: float = 0.05, display: str = "source", value: str = "importations", 
-                   date: str = 'day',
-                   categories=None) -> str:
+                   date: str = 'day', domestic: bool = True,
+                   categories=None,) -> str:
     """Builds an SQL query for analyzing importation data with an area plot.
     Inputs:
         table_name (str): BigQuery table name in "dataset.table" format containing importation data
@@ -41,33 +43,42 @@ def build_ap_query(table_name: str, reference_table: str, source_geo_level: str,
     where_clause = " AND ".join(where_clauses)
 
     query = f"""
-    WITH region_imports AS (
-      SELECT 
+    WITH median_imports AS (
+    SELECT
         g_{display}.{output_resolution} AS {display}_label, 
-        SUM(i.{value}) AS total_importations
-      FROM 
+        i.date, 
+        PERCENTILE_CONT(importations, 0.5) OVER (PARTITION BY g_target.{output_resolution}, g_source.{output_resolution}, i.date) AS median_importations
+    FROM 
         `{table_name}` AS i
-      JOIN 
+    JOIN 
         `{reference_table}` AS g_source 
-        ON g_source.basin_id = i.source_basin
-      JOIN 
+        ON g_source.{reference_col} = i.{source_col}
+    JOIN 
         `{reference_table}` AS g_target 
-        ON g_target.basin_id = i.target_basin
-      WHERE 
-        {where_clause}  
-      GROUP BY 
-        g_{display}.{output_resolution}
-    ),
+        ON g_target.{reference_col} = i.{target_col}
+    WHERE 
+        {where_clause}
+
+    ), region_imports AS (
+    SELECT 
+        source_label, 
+        SUM(median_importations) AS total_median_importations
+        FROM 
+            median_imports
+        GROUP BY
+            source_label
+        ORDER BY median_imports.{display}_label
+    ), 
     total_imports AS (
       SELECT 
-        SUM(total_importations) AS grand_total_importations 
+        SUM(median_importations) AS grand_total_importations 
       FROM region_imports
     ),
     categorized_regions AS (
       SELECT 
         r.{display}_label,
         CASE 
-          WHEN r.total_importations < ({cutoff} * (SELECT grand_total_importations FROM total_imports)) THEN "Other"
+          WHEN r.median_importations < ({cutoff} * (SELECT grand_total_importations FROM total_imports)) THEN "Other"
           ELSE r.{display}_label
         END AS categorized_label
       FROM 
@@ -77,19 +88,14 @@ def build_ap_query(table_name: str, reference_table: str, source_geo_level: str,
       cr.categorized_label AS {display}, 
       {"CAST(EXTRACT(ISOYEAR FROM i.date) AS STRING) || 'W' || LPAD(CAST(EXTRACT(ISOWEEK FROM i.date) AS STRING), 2, '0')" if date=='iso' else 'i.date'} AS date, 
       SUM(i.importations) AS importations,
-      AVG(SUM(i.importations)) OVER (
-        PARTITION BY cr.categorized_label 
-        ORDER BY i.date 
-        ROWS BETWEEN 6 PRECEDING AND CURRENT ROW
-      ) AS rolling_importations
     FROM 
       `{table_name}` AS i
     JOIN 
       `{reference_table}` AS g_target 
-      ON g_target.basin_id = i.target_basin
+      ON g_target.{reference_col} = i.{target_col}
     JOIN 
       `{reference_table}` AS g_source 
-      ON g_source.basin_id = i.source_basin
+      ON g_source.{reference_col} = i.{source_col}
     JOIN 
       categorized_regions cr 
       ON cr.{display}_label = g_{display}.{output_resolution}
@@ -117,6 +123,7 @@ def area_plot(client, table_name: str, reference_table: str,
                                  source_geo_level: str, target_geo_level: str,
                                  output_resolution: str = None, 
                                  source_values=None, target_values=None, 
+                                 source_col='source_basin', target_col='target_basin', reference_col='basin_id',
                                  domestic: bool = True, cutoff: float = 0.05,
                                  value: str = "importations", title: str = "Area Plot",
                                  display: str = "source") -> go.Figure:
@@ -151,7 +158,10 @@ def area_plot(client, table_name: str, reference_table: str,
         domestic=domestic,
         cutoff=cutoff,
         display=display,
-        value=value
+        value=value,
+        source_col=source_col, 
+        target_col=target_col, 
+        reference_col=reference_col,
     )
     
     # Step 2: Execute the query
@@ -173,8 +183,10 @@ def fetch_area_plot_data(fig):
     return df
 
 
-def build_sankey_query(table_name, reference_table, source_geo_level, target_geo_level, source_values, target_values, date_range, 
-                       value, cutoff=0.05, source_resolution=None, target_resolution=None, domestic=True,
+def build_sankey_query(table_name, reference_table, source_geo_level, target_geo_level, source_values, target_values, 
+                       date_range, value, 
+                       source_col='source_basin', target_col='target_basin', reference_col='basin_id',
+                       cutoff=0.05, source_resolution=None, target_resolution=None, domestic=True,
                        n_sources=100, n_targets=100):
                        
     if source_resolution == None:
@@ -210,10 +222,10 @@ def build_sankey_query(table_name, reference_table, source_geo_level, target_geo
             `{table_name}` AS i
         JOIN 
             `{reference_table}` AS g_target 
-            ON g_target.basin_id = i.target_basin
+            ON g_target.{reference_col} = i.{target_col}
         JOIN 
             `{reference_table}` AS g_source 
-            ON g_source.basin_id = i.source_basin
+            ON g_source.{reference_col} = i.{source_col}
         WHERE 
             {where_clause}
             AND i.date >= "{date_range[0]}"
@@ -227,11 +239,11 @@ def build_sankey_query(table_name, reference_table, source_geo_level, target_geo
         FROM 
             `{table_name}` AS i
         JOIN 
-            `{reference_table}` AS g_source
-            ON g_source.basin_id = i.source_basin
-        JOIN 
             `{reference_table}` AS g_target 
-            ON g_target.basin_id = i.target_basin
+            ON g_target.{reference_col} = i.{target_col}
+        JOIN 
+            `{reference_table}` AS g_source 
+            ON g_source.{reference_col} = i.{source_col}
         WHERE 
             {where_clause}
             AND i.date >= "{date_range[0]}"
@@ -247,11 +259,11 @@ def build_sankey_query(table_name, reference_table, source_geo_level, target_geo
         FROM 
             `{table_name}` AS i
         JOIN 
-            `{reference_table}` AS g_target
-            ON g_target.basin_id = i.target_basin
+            `{reference_table}` AS g_target 
+            ON g_target.{reference_col} = i.{target_col}
         JOIN 
-            `{reference_table}` AS g_source
-            ON g_source.basin_id = i.source_basin
+            `{reference_table}` AS g_source 
+            ON g_source.{reference_col} = i.{source_col}
         WHERE 
             {where_clause}
             AND i.date >= "{date_range[0]}"
@@ -323,11 +335,11 @@ def build_sankey_query(table_name, reference_table, source_geo_level, target_geo
         FROM 
             `{table_name}` AS i
         JOIN 
-            `{reference_table}` AS g_source
-            ON g_source.basin_id = i.source_basin
+            `{reference_table}` AS g_target 
+            ON g_target.{reference_col} = i.{target_col}
         JOIN 
-            `{reference_table}` AS g_target
-            ON g_target.basin_id = i.target_basin
+            `{reference_table}` AS g_source 
+            ON g_source.{reference_col} = i.{source_col}
         JOIN 
             categorized_sources cs
             ON cs.sourceid = g_source.{source_resolution.split("_")[0]+"_id"} * -1
@@ -410,6 +422,7 @@ def create_sankey_plot(data):
 
 def sankey(client, table_name, reference_table, source_geo_level, target_geo_level, source_values, target_values, date_range, value="importations",
            cutoff=0.05, source_resolution=None, target_resolution=None, domestic=True,
+           source_col='source_basin', target_col='target_basin', reference_col='basin_id',
            n_sources=None, n_targets=None):
     """ Creates a sankey diagram to show flow of cases.
      
@@ -446,7 +459,10 @@ def sankey(client, table_name, reference_table, source_geo_level, target_geo_lev
         domestic=domestic,
         value=value,
         n_sources=n_sources,
-        n_targets=n_targets
+        n_targets=n_targets,
+        source_col=source_col, 
+        target_col=target_col, 
+        reference_col=reference_col,
     )
     
     # Execute the query to get the data
@@ -465,7 +481,9 @@ def fetch_sankey_data(fig):
 
 
 
-def build_bar_query(table_name, reference_table, source_geo_level, target_geo_level, source_values, target_values, date_range, value,
+def build_bar_query(table_name, reference_table, source_geo_level, target_geo_level, source_values, target_values, 
+                    date_range, value,
+                    source_col='source_basin', target_col='target_basin', reference_col='basin_id',
                        cutoff=0.05, target_resolution=None, domestic=True, n=20):
         
     if target_resolution == None:
@@ -499,10 +517,10 @@ def build_bar_query(table_name, reference_table, source_geo_level, target_geo_le
                 `{table_name}` AS i
             JOIN 
                 `{reference_table}` AS g_target 
-                ON g_target.basin_id = i.target_basin
+                ON g_target.{reference_col} = i.{target_col}
             JOIN 
                 `{reference_table}` AS g_source 
-                ON g_source.basin_id = i.source_basin
+                ON g_source.{reference_col} = i.{source_col}
             WHERE 
                 {where_clause}
                 AND i.date >= "{date_range[0]}"
@@ -517,11 +535,11 @@ def build_bar_query(table_name, reference_table, source_geo_level, target_geo_le
             FROM 
                 `{table_name}` AS i
             JOIN 
-                `{reference_table}` AS g_target
-                ON g_target.basin_id = i.target_basin
+                `{reference_table}` AS g_target 
+                ON g_target.{reference_col} = i.{target_col}
             JOIN 
-                `{reference_table}` AS g_source
-                ON g_source.basin_id = i.source_basin
+                `{reference_table}` AS g_source 
+                ON g_source.{reference_col} = i.{source_col}
             WHERE 
                 {where_clause}
                 AND i.date >= "{date_range[0]}"
@@ -602,6 +620,7 @@ def create_bar_chart(data: pd.DataFrame, title: str = "Relative Risk of Importat
 
 def relative_risk(client, table_name, reference_table, source_geo_level, target_geo_level, source_values, target_values, date_range, value="importations",
            cutoff=0.05, n=20, target_resolution=None, domestic=True, 
+           source_col='source_basin', target_col='target_basin', reference_col='basin_id',
            title="Relative Risk of Importation", xlabel="Relative Risk of Importation", 
            ylabel=None):
     
@@ -638,7 +657,10 @@ def relative_risk(client, table_name, reference_table, source_geo_level, target_
         target_resolution=target_resolution,
         domestic=domestic,
         n=n,
-        value=value
+        value=value,
+        source_col=source_col, 
+        target_col=target_col, 
+        reference_col=reference_col,
     )
     
     # Execute the query to get the data
@@ -647,3 +669,7 @@ def relative_risk(client, table_name, reference_table, source_geo_level, target_
     # Create and return the Sankey plot
     return create_bar_chart(data, title, xlabel, 
                             ylabel if ylabel is not None else target_resolution)
+
+def fetch_relative_risk_data(fig):
+    df = pd.DataFrame({'risk': fig.data[0].x}, index=fig.data[0].y)
+    return df
