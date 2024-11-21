@@ -12,7 +12,7 @@ def build_ap_query(table_name: str, reference_table: str, source_geo_level: str,
                     
                    cutoff: float = 0.05, display: str = "source", value: str = "importations", 
                    date: str = 'day', domestic: bool = True,
-                   categories=None,) -> str:
+                   categories=None, category_col='category') -> str:
     """Builds an SQL query for analyzing importation data with an area plot.
     Inputs:
         table_name (str): BigQuery table name in "dataset.table" format containing importation data
@@ -33,7 +33,7 @@ def build_ap_query(table_name: str, reference_table: str, source_geo_level: str,
 
     source_filter = build_geographic_filter(source_geo_level, source_values, alias="g_source") if source_values is not None else "TRUE"
     target_filter = build_geographic_filter(target_geo_level, target_values, alias="g_target") if target_values is not None else  "TRUE"
-    cat_filter = build_categorical_filter(categories) if categories is not None else "TRUE"
+    cat_filter = build_categorical_filter(categories, category_col=category_col) if categories is not None else "TRUE"
     
     where_clauses = [target_filter, source_filter, cat_filter]
     
