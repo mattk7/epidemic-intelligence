@@ -71,14 +71,14 @@ def build_ap_query(table_name: str, reference_table: str, source_geo_level: str,
     ), 
     total_imports AS (
       SELECT 
-        SUM(median_importations) AS grand_total_importations 
+        SUM(total_median_importations) AS grand_total_importations 
       FROM region_imports
     ),
     categorized_regions AS (
       SELECT 
         r.{display}_label,
         CASE 
-          WHEN r.median_importations < ({cutoff} * (SELECT grand_total_importations FROM total_imports)) THEN "Other"
+          WHEN r.total_median_importations < ({cutoff} * (SELECT grand_total_importations FROM total_imports)) THEN "Other"
           ELSE r.{display}_label
         END AS categorized_label
       FROM 
@@ -187,17 +187,25 @@ def build_sankey_query(table_name, reference_table, source_geo_level, target_geo
                        date_range, value, 
                        source_col='source_basin', target_col='target_basin', reference_col='basin_id',
                        cutoff=0.05, source_resolution=None, target_resolution=None, domestic=True,
-                       n_sources=100, n_targets=100):
+                       n_sources=100, n_targets=100,
+                       categories=None, category_col='category'):
                        
     if source_resolution == None:
         source_resolution = source_geo_level
     if target_resolution == None:
         target_resolution = target_geo_level
+
+    # i dont know why this is needed but apparently it is
+    if n_sources==None:
+        n_sources = 100
+    if n_targets==None:
+        n_targets = 100
                        
     # Build filters for both source and target regions
     source_filter = build_geographic_filter(source_geo_level, source_values, alias="g_source")
     target_filter = build_geographic_filter(target_geo_level, target_values, alias="g_target")
-
+    cat_filter = build_categorical_filter(categories, category_col=category_col) if categories is not None else "TRUE"
+    
     # Create the base where clause
     where_clauses = []
 
@@ -205,6 +213,8 @@ def build_sankey_query(table_name, reference_table, source_geo_level, target_geo
         where_clauses.append(source_filter)
     if target_filter:
         where_clauses.append(target_filter)
+    if cat_filter:
+        where_clauses.append(cat_filter)
         
     if not domestic:
         # Exclude rows where target imports to itself
@@ -310,12 +320,12 @@ def build_sankey_query(table_name, reference_table, source_geo_level, target_geo
             tt.targetid,
             CASE 
                 WHEN tt.target_sum < {cutoff} * t.total_sum THEN 1.5
-                WHEN st.rank >= {n_targets} THEN 1.5
+                WHEN tt.rank >= {n_targets} THEN 1.5
                 ELSE tt.targetid
             END AS revisedtargetid,
             CASE 
                 WHEN tt.target_sum < {cutoff} * t.total_sum THEN "Other"
-                WHEN st.rank >= {n_targets} THEN "Other"
+                WHEN tt.rank >= {n_targets} THEN "Other"
                 ELSE tt.target
             END AS target
         FROM 
@@ -484,7 +494,8 @@ def fetch_sankey_data(fig):
 def build_bar_query(table_name, reference_table, source_geo_level, target_geo_level, source_values, target_values, 
                     date_range, value,
                     source_col='source_basin', target_col='target_basin', reference_col='basin_id',
-                       cutoff=0.05, target_resolution=None, domestic=True, n=20):
+                       cutoff=0.05, target_resolution=None, domestic=True, n=20,
+                       categories=None, category_col='category'):
         
     if target_resolution == None:
         target_resolution = target_geo_level
@@ -492,7 +503,8 @@ def build_bar_query(table_name, reference_table, source_geo_level, target_geo_le
     # Build filters for both source and target regions
     source_filter = build_geographic_filter(source_geo_level, source_values, alias="g_source")
     target_filter = build_geographic_filter(target_geo_level, target_values, alias="g_target")
-
+    cat_filter = build_categorical_filter(categories, category_col=category_col) if categories is not None else "TRUE"
+    
     # Create the base where clause
     where_clauses = []
 
@@ -500,6 +512,8 @@ def build_bar_query(table_name, reference_table, source_geo_level, target_geo_le
         where_clauses.append(source_filter)
     if target_filter:
         where_clauses.append(target_filter)
+    if cat_filter:
+        where_clauses.append(cat_filter)
             
     if not domestic:
         # Exclude rows where target imports to itself

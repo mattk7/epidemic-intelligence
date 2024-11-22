@@ -35,7 +35,6 @@ def functional_boxplot(client, table, reference_table, target,
     WHERE 
         {build_geographic_filter(geography, geography_value, alias="g")}
         {f'AND t.date >= "{date_range[0]}" AND t.date <= "{date_range[1]}"' if date_range is not None else ""}
-    --  AND run_id BETWEEN 1 AND 100
     GROUP BY date, geoid, geo, run_id
     ORDER BY date
     ;"""
