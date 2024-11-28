@@ -25,8 +25,12 @@ pio.templates['netsi']['layout']['colorscale']['diverging'] = \
 pio.templates['netsi']['layout']['shapedefaults']['line']['color'] = '#428299'
 
 # colorway from nicole
-pio.templates['netsi']['layout']['colorway'] = ['#428299', '#F48A64', '#77C6B1', 
-                                                '#F2D65F', '#80A4CE', '#CC9EB1', '#BFD88F', '#8E8E8E']
+pio.templates['netsi']['layout']['colorway'] = [
+    "#D86F6F", "#719DD1", "#ED9D66", "#87C6BE", "#B0D3A1", "#AA7289", "#EABB71",
+    "#3F96AA", "#C3CE86", "#B1E0D0", "#94B7E0", "#EDD77A", "#4A9986", "#B4BAD8",
+    "#CE6E57", "#61BDCE", "#626D89", "#E27959", "#B57FB0", "#DADD97", "#40708B",
+    "#61A36F", "#7D88B5", "#61AF98", "#A6D8E0", "#629BA5", "#C1B6B2", "#7BBA8A"
+]
 
 netsi = pio.templates['netsi']
 

@@ -38,7 +38,7 @@ def build_ap_query(table_name: str, reference_table: str, source_geo_level: str,
     where_clauses = [target_filter, source_filter, cat_filter]
     
     if not domestic:
-        where_clauses.append(f"g_source.{target_geo_level} <> g_target.{target_geo_level}")
+        where_clauses.append(f"g_source.{output_resolution} <> g_target.{output_resolution}")
 
     where_clause = " AND ".join(where_clauses)
 
@@ -179,6 +179,12 @@ def fetch_area_plot_data(fig):
     for trace in fig.data:
         dct = pd.DataFrame({trace.legendgroup: trace.y}, index=trace.x)
         df = pd.concat([df, dct], axis=1)
+
+    df = pd.melt(df, 
+        var_name = fig.layout.legend.title.text.lower(),
+        value_name = fig.layout.yaxis.title.text.lower(),
+        ignore_index = False
+       )
 
     return df
 
@@ -409,13 +415,14 @@ def create_sankey_plot(data):
       node=dict(
           pad=15,
           thickness=20,
-          line=dict(color="black", width=0.3),
+          line=dict(color="black", width=0),
           label=[name_mapping[id_] for id_ in dict_indices.keys()],  # Use names as node labels
       ),
       link=dict(
           source=source,  # Use mapped source indices
           target=target,  # Use mapped target indices
           value=value,
+          color='rgba(221, 219, 215, .6)',
       )
   ))
 
@@ -426,7 +433,6 @@ def create_sankey_plot(data):
   
   # convert values to percentages and other formatting
   fig.data[0]["valueformat"] = ".1%"
-  fig.data[0].node["line"]["width"] = 0
 
   return fig
 
@@ -633,7 +639,7 @@ def create_bar_chart(data: pd.DataFrame, title: str = "Relative Risk of Importat
     return fig
 
 def relative_risk(client, table_name, reference_table, source_geo_level, target_geo_level, source_values, target_values, date_range, value="importations",
-           cutoff=0.05, n=20, target_resolution=None, domestic=True, 
+           cutoff=0.05, n=20, output_resolution=None, domestic=True, 
            source_col='source_basin', target_col='target_basin', reference_col='basin_id',
            title="Relative Risk of Importation", xlabel="Relative Risk of Importation", 
            ylabel=None):
@@ -668,7 +674,7 @@ def relative_risk(client, table_name, reference_table, source_geo_level, target_
         target_values=target_values,
         date_range=date_range,
         cutoff=cutoff,
-        target_resolution=target_resolution,
+        target_resolution=output_resolution,
         domestic=domestic,
         n=n,
         value=value,
@@ -682,8 +688,8 @@ def relative_risk(client, table_name, reference_table, source_geo_level, target_
     
     # Create and return the Sankey plot
     return create_bar_chart(data, title, xlabel, 
-                            ylabel if ylabel is not None else target_resolution)
+                            ylabel if ylabel is not None else output_resolution)
 
 def fetch_relative_risk_data(fig):
-    df = pd.DataFrame({'risk': fig.data[0].x}, index=fig.data[0].y)
+    df = pd.DataFrame({fig.layout.xaxis.title.text.lower().replace(" ", "_"): fig.data[0].x}, index=fig.data[0].y)
     return df
