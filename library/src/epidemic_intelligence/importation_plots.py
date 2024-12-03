@@ -1,4 +1,3 @@
-from google.cloud import bigquery
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -11,8 +10,7 @@ def build_ap_query(table_name: str, reference_table: str, source_geo_level: str,
                    source_col='source_basin', target_col='target_basin', reference_col='basin_id',
                     
                    cutoff: float = 0.05, display: str = "source", value: str = "importations", 
-                   date: str = 'day', domestic: bool = True,
-                   categories=None, category_col='category') -> str:
+                   domestic: bool = True) -> str:
     """Builds an SQL query for analyzing importation data with an area plot.
     Inputs:
         table_name (str): BigQuery table name in "dataset.table" format containing importation data
@@ -33,9 +31,8 @@ def build_ap_query(table_name: str, reference_table: str, source_geo_level: str,
 
     source_filter = build_geographic_filter(source_geo_level, source_values, alias="g_source") if source_values is not None else "TRUE"
     target_filter = build_geographic_filter(target_geo_level, target_values, alias="g_target") if target_values is not None else  "TRUE"
-    cat_filter = build_categorical_filter(categories, category_col=category_col) if categories is not None else "TRUE"
     
-    where_clauses = [target_filter, source_filter, cat_filter]
+    where_clauses = [target_filter, source_filter]
     
     if not domestic:
         where_clauses.append(f"g_source.{output_resolution} <> g_target.{output_resolution}")
@@ -43,11 +40,10 @@ def build_ap_query(table_name: str, reference_table: str, source_geo_level: str,
     where_clause = " AND ".join(where_clauses)
 
     query = f"""
-    WITH median_imports AS (
+    WITH region_imports AS (
     SELECT
         g_{display}.{output_resolution} AS {display}_label, 
-        i.date, 
-        PERCENTILE_CONT(importations, 0.5) OVER (PARTITION BY g_target.{output_resolution}, g_source.{output_resolution}, i.date) AS median_importations
+       SUM({value}) AS importations
     FROM 
         `{table_name}` AS i
     JOIN 
@@ -58,27 +54,19 @@ def build_ap_query(table_name: str, reference_table: str, source_geo_level: str,
         ON g_target.{reference_col} = i.{target_col}
     WHERE 
         {where_clause}
-
-    ), region_imports AS (
-    SELECT 
-        source_label, 
-        SUM(median_importations) AS total_median_importations
-        FROM 
-            median_imports
-        GROUP BY
-            source_label
-        ORDER BY median_imports.{display}_label
+    GROUP BY
+        g_{display}.{output_resolution}
     ), 
     total_imports AS (
       SELECT 
-        SUM(total_median_importations) AS grand_total_importations 
+        SUM(importations) AS grand_total_importations 
       FROM region_imports
     ),
     categorized_regions AS (
       SELECT 
         r.{display}_label,
         CASE 
-          WHEN r.total_median_importations < ({cutoff} * (SELECT grand_total_importations FROM total_imports)) THEN "Other"
+          WHEN r.importations < ({cutoff} * (SELECT grand_total_importations FROM total_imports)) THEN "Other"
           ELSE r.{display}_label
         END AS categorized_label
       FROM 
@@ -86,7 +74,7 @@ def build_ap_query(table_name: str, reference_table: str, source_geo_level: str,
     )
     SELECT 
       cr.categorized_label AS {display}, 
-      {"CAST(EXTRACT(ISOYEAR FROM i.date) AS STRING) || 'W' || LPAD(CAST(EXTRACT(ISOWEEK FROM i.date) AS STRING), 2, '0')" if date=='iso' else 'i.date'} AS date, 
+      i.date AS date, 
       SUM(i.importations) AS importations,
     FROM 
       `{table_name}` AS i
@@ -190,7 +178,7 @@ def fetch_area_plot_data(fig):
 
 
 def build_sankey_query(table_name, reference_table, source_geo_level, target_geo_level, source_values, target_values, 
-                       date_range, value, 
+                       date_range, value='importations', 
                        source_col='source_basin', target_col='target_basin', reference_col='basin_id',
                        cutoff=0.05, source_resolution=None, target_resolution=None, domestic=True,
                        n_sources=100, n_targets=100,

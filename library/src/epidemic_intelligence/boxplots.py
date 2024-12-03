@@ -1,13 +1,17 @@
-from epidemic_intelligence.helper import execute, create_dataset, generate_random_hash, build_geographic_filter, hex_to_rgba
+from epidemic_intelligence.helper import execute, create_dataset, generate_random_hash, build_geographic_filter, hex_to_rgba, build_categorical_filter
 from epidemic_intelligence.templates import netsi
 from google.cloud import bigquery
 import pandas as pd
 import time
 import plotly.graph_objects as go
 
-def functional_boxplot(client, table, reference_table, target, 
-                       org_geography, geography=None, geography_value=None, 
-                       date='day', date_range=None, 
+def functional_boxplot(client, table_name: str, reference_table: str, source_geo_level: str, 
+                   target_geo_level: str, output_resolution: str = None, 
+                   source_values=None, target_values=None, 
+                   source_col='source_basin', target_col='target_basin', reference_col='basin_id',
+                   display='target', value='importations',
+                   categories=None, category_col='category',
+                   domestic=True,
                        num_clusters=1, num_features=10, grouping_method="mse", centrality_method="mse", threshold=1.5,
                        dataset=None, delete_data=True):
 
@@ -18,25 +22,38 @@ def functional_boxplot(client, table, reference_table, target,
     # create dataset if it doesn"t already exist
     create_dataset(client, dataset)
 
+    source_filter = build_geographic_filter(source_geo_level, source_values, alias="g_source") if source_values is not None else "TRUE"
+    target_filter = build_geographic_filter(target_geo_level, target_values, alias="g_target") if target_values is not None else  "TRUE"
+    cat_filter = build_categorical_filter(categories, category_col=category_col) if categories is not None else "TRUE"
+    
+    where_clauses = [target_filter, source_filter, cat_filter]
+    
+    if not domestic:
+        where_clauses.append(f"g_source.{output_resolution} <> g_target.{output_resolution}")
+
+    where_clause = " AND ".join(where_clauses)
+
     # get id of geo target
-    geo_id = geography.split("_")[0]+"_id"
+    geo_id = output_resolution.split("_")[0]+"_id"
 
     # Step 1: Create initial data table
     query_base = f""" CREATE OR REPLACE TABLE `{dataset}.data` AS
     SELECT 
-        {"CAST(EXTRACT(ISOYEAR FROM t.date) AS STRING) || 'W' || LPAD(CAST(EXTRACT(ISOWEEK FROM t.date) AS STRING), 2, '0')" if date=='iso' else 't.date'} AS date,
-        g.{geography} AS geo, 
-        g.{geo_id} AS geoid,
+        t.date,
+        g_{display}.{output_resolution} AS geo, 
+        g_{display}.{geo_id} AS geoid,
         t.run_id,
-        SUM(t.{target}) as value
-    FROM `{table}` as t
-    JOIN `{reference_table}` AS g
-        ON g.{org_geography} = t.{org_geography}
+        SUM(t.{value}) as value
+    FROM `{table_name}` as t
+    JOIN 
+        `{reference_table}` AS g_source 
+        ON g_source.{reference_col} = t.{source_col}
+    JOIN 
+        `{reference_table}` AS g_target 
+        ON g_target.{reference_col} = t.{target_col}
     WHERE 
-        {build_geographic_filter(geography, geography_value, alias="g")}
-        {f'AND t.date >= "{date_range[0]}" AND t.date <= "{date_range[1]}"' if date_range is not None else ""}
+        {where_clause}
     GROUP BY date, geoid, geo, run_id
-    ORDER BY date
     ;"""
 
     df = client.query(query_base).result()  # Execute the query to create the table
@@ -436,7 +453,7 @@ def functional_boxplot(client, table, reference_table, target,
             
         # Lower
         fig.add_trace(go.Scatter(
-            name=f"Group {group} Lower Quartile",
+            name=f"Group {group} Lower Percentile",
             x=merged_curves[merged_curves["CENTROID_ID"] == group]["date"],
             y=merged_curves[merged_curves["CENTROID_ID"] == group]["curve_25"],
             marker=dict(color="#444"),
@@ -447,7 +464,7 @@ def functional_boxplot(client, table, reference_table, target,
         ))
         # Upper
         fig.add_trace(go.Scatter(
-            name=f"Group {group}",
+            name=f"Group {group} Upper Percentile",
             x=merged_curves[merged_curves["CENTROID_ID"] == group]["date"],
             y=merged_curves[merged_curves["CENTROID_ID"] == group]["curve_75"],
             mode="lines",
@@ -455,19 +472,19 @@ def functional_boxplot(client, table, reference_table, target,
             line=dict(width=0),
             fillcolor=hex_to_rgba(colors[group-1], alpha=.3),
             fill="tonexty",
-            showlegend=True,
+            showlegend=False,
             legendgroup=str(group)  # Assign to legend group
         ))
         
         
         fig.add_trace(go.Scatter(
-            name=f"Group {group} Median",
+            name=f"Group {group}",
             x=merged_curves[merged_curves["CENTROID_ID"] == group]["date"],
             y=merged_curves[merged_curves["CENTROID_ID"] == group]["median"],
             marker=dict(color=hex_to_rgba(colors[group-1], alpha=1)),
             line=dict(width=1),
             mode="lines",
-            showlegend=False,
+            showlegend=True,
             legendgroup=str(group)  # Assign to legend group
         ))
 
@@ -481,40 +498,59 @@ def functional_boxplot(client, table, reference_table, target,
 
     return fig
 
-def fixed_time_boxplot(client, table, reference_table, target, 
-                       org_geography, geography=None, geography_value=None, 
-                       date='day', date_range=None, 
+def fixed_time_boxplot(client, table_name, reference_table, 
+                       source_geo_level: str, 
+                    target_geo_level: str, output_resolution: str = None, 
+                    source_values=None, target_values=None, 
+                    source_col='source_basin', target_col='target_basin', reference_col='basin_id',
+                    display='target', value='importations',
+                    categories=None, category_col='category',
+                    domestic=False,
+                       
                        num_clusters=1, num_features=10, grouping_method="mse", 
                        dataset=None, delete_data=True, kmeans_table=False,
                        confidence=.9, full_range = False, outlying_points = True):
 
-    # get id of geo target
-    geo_id = geography.split("_")[0]+"_id"
-
     # make sure we have a dataset name
     if dataset == None:
         dataset = generate_random_hash()
-                
+        
     # create dataset if it doesn"t already exist
     create_dataset(client, dataset)
+
+    source_filter = build_geographic_filter(source_geo_level, source_values, alias="g_source") if source_values is not None else "TRUE"
+    target_filter = build_geographic_filter(target_geo_level, target_values, alias="g_target") if target_values is not None else  "TRUE"
+    cat_filter = build_categorical_filter(categories, category_col=category_col) if categories is not None else "TRUE"
+    
+    where_clauses = [target_filter, source_filter, cat_filter]
+    
+    if not domestic:
+        where_clauses.append(f"g_source.{output_resolution} <> g_target.{output_resolution}")
+
+    where_clause = " AND ".join(where_clauses)
+
+    # get id of geo target
+    geo_id = output_resolution.split("_")[0]+"_id"
+
 
     # Step 1: Create initial data table
     query_base = f""" CREATE OR REPLACE TABLE `{dataset}.data` AS
             SELECT 
-                {"CAST(EXTRACT(ISOYEAR FROM t.date) AS STRING) || 'W' || LPAD(CAST(EXTRACT(ISOWEEK FROM t.date) AS STRING), 2, '0')" if date=='iso' else 't.date'} AS date,
-                g.{geography} AS geo, 
-                g.{geo_id} AS geoid,
-                t.run_id,
-                SUM(t.{target}) as value
-            FROM `{table}` as t
-            JOIN `{reference_table}` AS g
-                ON g.{org_geography} = t.{org_geography}
-            WHERE 
-                {build_geographic_filter(geography, geography_value, alias="g")}
-                {f'AND t.date >= "{date_range[0]}" AND t.date <= "{date_range[1]}"' if date_range is not None else ""}
-            --  AND run_id BETWEEN 1 AND 100
-            GROUP BY date, geoid, geo, run_id
-            ORDER BY date
+        t.date,
+        g_{display}.{output_resolution} AS geo, 
+        g_{display}.{geo_id} AS geoid,
+        t.run_id,
+        SUM(t.{value}) as value
+    FROM `{table_name}` as t
+    JOIN 
+        `{reference_table}` AS g_source 
+        ON g_source.{reference_col} = t.{source_col}
+    JOIN 
+        `{reference_table}` AS g_target 
+        ON g_target.{reference_col} = t.{target_col}
+    WHERE 
+        {where_clause}
+    GROUP BY date, geoid, geo, run_id
             ;"""
 
     df = client.query(query_base).result()  # Execute the query to create the table
@@ -739,7 +775,7 @@ def fixed_time_boxplot(client, table, reference_table, target,
                 legendgroup=str(group)  # Assign to legend group
             ))
             fig.add_trace(go.Scatter(
-                name=f"Full Range",
+                name=f"Maximum",
                 x=df_group.index,
                 y=df_group["Max"],
                 mode="lines",
