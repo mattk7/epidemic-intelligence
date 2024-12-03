@@ -3,7 +3,7 @@ import pandas as pd
 from epiweeks import Week
 from datetime import date as ddate
 
-def simplify_multirun(client, table_name, destination, 
+def summarize_runs(client, table_name, destination, 
                          method='median', 
                          source_column = 'source_basin', target_column = 'target_basin', 
                          value_column = 'importations', compartment_column = 'compartment'):
@@ -139,7 +139,8 @@ def simplify_multirun(client, table_name, destination,
         
 def aggregate_table(client, table_name, destination, 
                     source_column = 'source_basin', target_column = 'target_basin', 
-                    value_column = 'importations', compartment_column = 'compartment',
+                    value_column = 'importations',  run_id_column = None,
+                    compartment_column = 'compartment',
                     compartments = False, new_compartment = 'compartment',
                     date='date'):
     cat_filter = build_categorical_filter(compartments, category_col=compartment_column, alias='t') if compartments is not False else "TRUE"
@@ -150,9 +151,10 @@ def aggregate_table(client, table_name, destination,
         agg_query = f"""
         CREATE OR REPLACE TABLE `{destination}` AS
         SELECT
+            {f'{run_id_column} AS run_id, ' if run_id_column is not None else ''}
             {source_column},
             {target_column}, 
-            {f"'{new_compartment}' AS compartment," if isinstance(new_compartment, str) else ''}
+            {f"'{new_compartment}' AS compartment," if isinstance(compartments, list) or compartments==True else f't.{compartment_column} AS compartment,'}
             SUM({value_column}) as {value_column}, 
             {"CAST(EXTRACT(ISOYEAR FROM date) AS STRING) || 'W' || LPAD(CAST(EXTRACT(ISOWEEK FROM date) AS STRING), 2, '0')" if date=='iso' else 't.date'} AS date
         FROM
@@ -160,9 +162,10 @@ def aggregate_table(client, table_name, destination,
         WHERE
             {where_clause}
         GROUP BY
+            {'run_id, ' if run_id_column is not None else ''}
             {source_column},
             {target_column}, 
-            {'compartment, ' if isinstance(new_compartment, str) else ''}
+            compartment, 
             date
         """
         execute(client, agg_query)
@@ -187,7 +190,7 @@ def aggregate_table(client, table_name, destination,
             SELECT
                 t.{source_column},
                 t.{target_column}, 
-                {f"'{new_compartment}' AS compartment," if isinstance(new_compartment, str) else ''}
+                {f"'{new_compartment}' AS compartment," if isinstance(compartments, list) or compartments==True else f't.{compartment_column}, '}
                 SUM(t.{value_column}) as {value_column}, 
                 e.epiweek AS date
             FROM
@@ -199,7 +202,7 @@ def aggregate_table(client, table_name, destination,
             GROUP BY
                 t.{source_column},
                 t.{target_column}, 
-                {'compartment, ' if isinstance(new_compartment, str) else ''}
+                compartment, 
                 date
             """
         

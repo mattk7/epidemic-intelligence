@@ -7,7 +7,7 @@ from epidemic_intelligence.helper import execute, build_geographic_filter, build
 def build_ap_query(table_name: str, reference_table: str, source_geo_level: str, 
                    target_geo_level: str, output_resolution: str = None, 
                    source_values=None, target_values=None, 
-                   source_col='source_basin', target_col='target_basin', reference_col='basin_id',
+                   source_column='source_basin', target_column='target_basin', reference_column='basin_id',
                     
                    cutoff: float = 0.05, display: str = "source", value: str = "importations", 
                    domestic: bool = True) -> str:
@@ -48,10 +48,10 @@ def build_ap_query(table_name: str, reference_table: str, source_geo_level: str,
         `{table_name}` AS i
     JOIN 
         `{reference_table}` AS g_source 
-        ON g_source.{reference_col} = i.{source_col}
+        ON g_source.{reference_column} = i.{source_column}
     JOIN 
         `{reference_table}` AS g_target 
-        ON g_target.{reference_col} = i.{target_col}
+        ON g_target.{reference_column} = i.{target_column}
     WHERE 
         {where_clause}
     GROUP BY
@@ -80,10 +80,10 @@ def build_ap_query(table_name: str, reference_table: str, source_geo_level: str,
       `{table_name}` AS i
     JOIN 
       `{reference_table}` AS g_target 
-      ON g_target.{reference_col} = i.{target_col}
+      ON g_target.{reference_column} = i.{target_column}
     JOIN 
       `{reference_table}` AS g_source 
-      ON g_source.{reference_col} = i.{source_col}
+      ON g_source.{reference_column} = i.{source_column}
     JOIN 
       categorized_regions cr 
       ON cr.{display}_label = g_{display}.{output_resolution}
@@ -111,9 +111,9 @@ def area_plot(client, table_name: str, reference_table: str,
                                  source_geo_level: str, target_geo_level: str,
                                  output_resolution: str = None, 
                                  source_values=None, target_values=None, 
-                                 source_col='source_basin', target_col='target_basin', reference_col='basin_id',
+                                 source_column='source_basin', target_column='target_basin', reference_column='basin_id',
                                  domestic: bool = True, cutoff: float = 0.05,
-                                 value: str = "importations", title: str = "Area Plot",
+                                 value: str = "importations", 
                                  display: str = "source") -> go.Figure:
     """Creates an area plot by executing a query based on the provided parameters.
     
@@ -147,16 +147,16 @@ def area_plot(client, table_name: str, reference_table: str,
         cutoff=cutoff,
         display=display,
         value=value,
-        source_col=source_col, 
-        target_col=target_col, 
-        reference_col=reference_col,
+        source_column=source_column, 
+        target_column=target_column, 
+        reference_column=reference_column,
     )
     
     # Step 2: Execute the query
     data = execute(client, query)
     
     # Step 3: Create the area plot
-    fig = create_area_plot(data, value=value, title=title, 
+    fig = create_area_plot(data, value=value,  
                            xlabel="Date", ylabel="Exportations" if display=="source" else "Importations", 
                            legendlabel=display.capitalize(), display=display)
     
