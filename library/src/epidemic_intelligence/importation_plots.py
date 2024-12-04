@@ -198,7 +198,7 @@ def build_sankey_query(table_name, reference_table, source_geo_level, target_geo
     # Build filters for both source and target regions
     source_filter = build_geographic_filter(source_geo_level, source_values, alias="g_source")
     target_filter = build_geographic_filter(target_geo_level, target_values, alias="g_target")
-    cat_filter = build_categorical_filter(categories, category_col=category_col) if categories is not None else "TRUE"
+    # cat_filter = build_categorical_filter(categories, category_col=category_col) if categories is not None else "TRUE"
     
     # Create the base where clause
     where_clauses = []
@@ -207,8 +207,8 @@ def build_sankey_query(table_name, reference_table, source_geo_level, target_geo
         where_clauses.append(source_filter)
     if target_filter:
         where_clauses.append(target_filter)
-    if cat_filter:
-        where_clauses.append(cat_filter)
+    # if cat_filter:
+    #     where_clauses.append(cat_filter)
         
     if not domestic:
         # Exclude rows where target imports to itself
