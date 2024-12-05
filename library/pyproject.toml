@@ -13,7 +13,7 @@ root = "src/epidemic_intelligence"
 
 [project]
 name = "epidemic-intelligence"
-version = "0.3.4"
+version = "0.3.5"
 authors = [
     { name = "Elijah Sandler", email = "sandler.e@northeastern.edu" },
 ]
@@ -31,7 +31,7 @@ dependencies = [
   "plotly>5.24",
   "google-cloud-bigquery>3.0.0",
   "matplotlib>3.7.0",
-  "kaleido",
+  "kaleido=0.1.0.post1",
   "epiweeks",
   "db-dtypes>1.0.0"
 ]
