@@ -5,9 +5,12 @@ import pandas as pd
 import time
 import plotly.graph_objects as go
 
-def functional_boxplot(client, table_name, reference_table, value, 
-                       org_geography, geography=None, geography_value=None, 
-                       num_clusters=1, num_features=10, grouping_method='mse', centrality_method='mse', threshold=1.5,
+def functional_boxplot(client, table_name, reference_table,  
+                       geo_level, geography_values, 
+                       geo_col='basin_id', reference_col='basin_id',
+                       target='value',
+                       num_clusters=1, num_features=10, grouping_method='mse', kmeans_table=False,
+                       centrality_method='mse', threshold=1.5,
                        dataset=None, delete_data=True):
 
     # make sure we have a dataset name
@@ -17,23 +20,20 @@ def functional_boxplot(client, table_name, reference_table, value,
     # create dataset if it doesn't already exist
     create_dataset(client, dataset)
 
-    # get id of geo target
-    geo_id = geography.split('_')[0]+'_id'
-
     # Step 1: Create initial data table
     query_base = f""" CREATE OR REPLACE TABLE `{dataset}.data` AS
-    SELECT 
-        t.date,
-        t.run_id,
-        SUM(t.{value}) as value
-    FROM `{table_name}` as t
-    JOIN `{reference_table}` AS g
-        ON g.{org_geography} = t.{org_geography}
-    WHERE 
-        {build_geographic_filter(geography, geography_value, alias='g')}
-    GROUP BY date, run_id
-    ORDER BY date
-    ;"""
+            SELECT 
+                t.date,
+                t.run_id,
+                SUM(t.{target}) as value
+            FROM `{table_name}` as t
+            JOIN `{reference_table}` AS g
+                ON g.{reference_col} = t.{geo_col}
+            WHERE 
+                {build_geographic_filter(geo_level, geography_values, alias='g')}
+            GROUP BY date, run_id
+            ORDER BY date
+            ;"""
 
     df = client.query(query_base).result()  # Execute the query to create the table
 
@@ -135,7 +135,7 @@ def functional_boxplot(client, table_name, reference_table, value,
                 run_id_b, 
                 {centrality_method}  
             FROM 
-                `{dataset}.kmeans_results` AS kr
+                `{f'{dataset}.kmeans_results' if kmeans_table is False else kmeans_table}` AS kr
             JOIN 
                 `{dataset}.curve_distances` AS dm
             ON 
@@ -148,7 +148,7 @@ def functional_boxplot(client, table_name, reference_table, value,
                 run_id AS run_id_b, 
                 CENTROID_ID AS CENTROID_ID_B
             FROM
-                `{dataset}.kmeans_results`
+                `{f'{dataset}.kmeans_results' if kmeans_table is False else kmeans_table}`
         )
         SELECT 
             a.run_id,
@@ -172,53 +172,20 @@ def functional_boxplot(client, table_name, reference_table, value,
     # or do the same for mbd
     s = time.time()
     mbd = f"""
-    CREATE OR REPLACE TABLE `{dataset}.total_distances_table`AS
-    WITH curve_data AS (
-        SELECT DISTINCT
-            a.date AS date,
-            a.run_id AS run_id,
-            kra.CENTROID_ID as CENTROID_ID,
-            b.run_id AS boundary_1_id,
-            c.run_id AS boundary_2_id, 
-            (a.value) AS curve,
-            (b.value) AS boundary_1,
-            (c.value) AS boundary_2
-        FROM
-            `{dataset}.data` AS a
-        JOIN
-            `{dataset}.data` AS b ON a.date = b.date
-        JOIN
-            `{dataset}.data` AS c ON a.date = c.date
-        JOIN 
-            `{dataset}.kmeans_results` AS kra ON a.run_id = kra.run_id
-        JOIN 
-            `{dataset}.kmeans_results` AS krb ON b.run_id = krb.run_id
-        JOIN
-            `{dataset}.kmeans_results` AS krc ON c.run_id = krc.run_id
-        
-        WHERE
-            b.run_id < c.run_id
-            AND a.run_id != b.run_id
-            AND a.run_id != c.run_id
-            AND kra.CENTROID_ID = krb.CENTROID_ID
-            AND kra.CENTROID_ID = krc.CENTROID_ID
-
-    --   GROUP BY
-    --   a.date, a.run_id, CENTROID_ID, b.run_id, c.run_id
-        ORDER BY
-        a.run_id, b.run_id, c.run_id, a.date
-    )
-
-
-    SELECT
-        run_id,
-        CENTROID_ID,
-        1 / COUNT(*) as total_distance
-    FROM curve_data
-    WHERE
-    (curve_data.boundary_1 <= curve AND curve <= boundary_2)
-    OR (curve_data.boundary_2 <= curve AND curve <= boundary_1)
-    GROUP BY run_id, CENTROID_ID
+        WITH cume_dist AS (
+            SELECT DISTINCT  data.run_id, date, CENTROID_ID,
+            CUME_DIST() OVER(PARTITION BY date, CENTROID_ID ORDER BY value ASC) AS rank_asc,
+            CUME_DIST() OVER(PARTITION BY date, CENTROID_ID ORDER BY value DESC) AS  rank_desc
+            FROM `{dataset}.data` as data
+            JOIN `{f'{dataset}.kmeans_results' if kmeans_table is False else kmeans_table}` as kr
+            ON data.run_id = kr.run_id
+        ) SELECT DISTINCT
+            cume_dist.run_id, 
+            CENTROID_ID as CENTROID_ID, 
+            SUM(rank_asc * rank_desc) AS total_distance
+        FROM cume_dist
+        GROUP BY run_id, CENTROID_ID
+        ORDER BY run_id
     """
     # centrality_method = 'mbd'
     if centrality_method == 'mbd':
@@ -509,14 +476,13 @@ def functional_boxplot(client, table_name, reference_table, value,
 
     return fig
 
-def fixed_time_boxplot(client, table_name, reference_table, target, 
-                       org_geography, geography=None, geography_value=None, 
+def fixed_time_boxplot(client, table_name, reference_table,  
+                       geo_level, geography_values, 
+                       geo_col='basin_id', reference_col='basin_id', 
                        num_clusters=1, num_features=10, grouping_method='mse', 
+                       target='value',
                        dataset=None, delete_data=True, kmeans_table=False,
                        confidence=.9, full_range = False, outlying_points = True):
-
-    # get id of geo target
-    geo_id = geography.split('_')[0]+'_id'
 
     # make sure we have a dataset name
     if dataset == None:
@@ -533,9 +499,9 @@ def fixed_time_boxplot(client, table_name, reference_table, target,
                 SUM(t.{target}) as value
             FROM `{table_name}` as t
             JOIN `{reference_table}` AS g
-                ON g.{org_geography} = t.{org_geography}
+                ON g.{reference_col} = t.{geo_col}
             WHERE 
-                {build_geographic_filter(geography, geography_value, alias='g')}
+                {build_geographic_filter(geo_level, geography_values, alias='g')}
             GROUP BY date, run_id
             ORDER BY date
             ;"""
