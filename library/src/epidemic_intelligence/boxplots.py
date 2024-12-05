@@ -5,7 +5,7 @@ import pandas as pd
 import time
 import plotly.graph_objects as go
 
-def functional_boxplot(client, table, reference_table, target, 
+def functional_boxplot(client, table_name, reference_table, value, 
                        org_geography, geography=None, geography_value=None, 
                        num_clusters=1, num_features=10, grouping_method='mse', centrality_method='mse', threshold=1.5,
                        dataset=None, delete_data=True):
@@ -24,15 +24,14 @@ def functional_boxplot(client, table, reference_table, target,
     query_base = f""" CREATE OR REPLACE TABLE `{dataset}.data` AS
     SELECT 
         t.date,
-        g.{geography} AS {org_geography}, 
         t.run_id,
-        SUM(t.{target}) as value
-    FROM `{table}` as t
+        SUM(t.{value}) as value
+    FROM `{table_name}` as t
     JOIN `{reference_table}` AS g
         ON g.{org_geography} = t.{org_geography}
     WHERE 
         {build_geographic_filter(geography, geography_value, alias='g')}
-    GROUP BY date, {org_geography}, run_id
+    GROUP BY date, run_id
     ORDER BY date
     ;"""
 
@@ -510,9 +509,8 @@ def functional_boxplot(client, table, reference_table, target,
 
     return fig
 
-def fixed_time_boxplot(client, table, reference_table, target, 
+def fixed_time_boxplot(client, table_name, reference_table, target, 
                        org_geography, geography=None, geography_value=None, 
-                       date_range=None, 
                        num_clusters=1, num_features=10, grouping_method='mse', 
                        dataset=None, delete_data=True, kmeans_table=False,
                        confidence=.9, full_range = False, outlying_points = True):
@@ -531,17 +529,14 @@ def fixed_time_boxplot(client, table, reference_table, target,
     query_base = f""" CREATE OR REPLACE TABLE `{dataset}.data` AS
             SELECT 
                 t.date,
-                g.{geography} AS geo, 
                 t.run_id,
                 SUM(t.{target}) as value
-            FROM `{table}` as t
+            FROM `{table_name}` as t
             JOIN `{reference_table}` AS g
                 ON g.{org_geography} = t.{org_geography}
             WHERE 
                 {build_geographic_filter(geography, geography_value, alias='g')}
-                {f"AND t.date >= '{date_range[0]}' AND t.date <= '{date_range[1]}'" if date_range is not None else ''}
-            --  AND run_id BETWEEN 1 AND 100
-            GROUP BY date, geo, run_id
+            GROUP BY date, run_id
             ORDER BY date
             ;"""
 
