@@ -6,9 +6,9 @@ import time
 import plotly.graph_objects as go
 
 def functional_boxplot(client, table_name, reference_table,  
-                       geo_level, geography_values, 
-                       geo_col='basin_id', reference_col='basin_id',
-                       target='value',
+                       geo_level, geo_values, 
+                       geo_column='basin_id', reference_column='basin_id',
+                       value='value',
                        num_clusters=1, num_features=10, grouping_method='mse', kmeans_table=False,
                        centrality_method='mse', threshold=1.5,
                        dataset=None, delete_data=True):
@@ -25,12 +25,12 @@ def functional_boxplot(client, table_name, reference_table,
             SELECT 
                 t.date,
                 t.run_id,
-                SUM(t.{target}) as value
+                SUM(t.{value}) as value
             FROM `{table_name}` as t
             JOIN `{reference_table}` AS g
-                ON g.{reference_col} = t.{geo_col}
+                ON g.{reference_column} = t.{geo_column}
             WHERE 
-                {build_geographic_filter(geo_level, geography_values, alias='g')}
+                {build_geographic_filter(geo_level, geo_values, alias='g')}
             GROUP BY date, run_id
             ORDER BY date
             ;"""
@@ -477,10 +477,10 @@ def functional_boxplot(client, table_name, reference_table,
     return fig
 
 def fixed_time_boxplot(client, table_name, reference_table,  
-                       geo_level, geography_values, 
-                       geo_col='basin_id', reference_col='basin_id', 
+                       geo_level, geo_values, 
+                       geo_column='basin_id', reference_column='basin_id', 
                        num_clusters=1, num_features=10, grouping_method='mse', 
-                       target='value',
+                       value='value',
                        dataset=None, delete_data=True, kmeans_table=False,
                        confidence=.9, full_range = False, outlying_points = True):
 
@@ -496,12 +496,12 @@ def fixed_time_boxplot(client, table_name, reference_table,
             SELECT 
                 t.date,
                 t.run_id,
-                SUM(t.{target}) as value
+                SUM(t.{value}) as value
             FROM `{table_name}` as t
             JOIN `{reference_table}` AS g
-                ON g.{reference_col} = t.{geo_col}
+                ON g.{reference_column} = t.{geo_column}
             WHERE 
-                {build_geographic_filter(geo_level, geography_values, alias='g')}
+                {build_geographic_filter(geo_level, geo_values, alias='g')}
             GROUP BY date, run_id
             ORDER BY date
             ;"""
