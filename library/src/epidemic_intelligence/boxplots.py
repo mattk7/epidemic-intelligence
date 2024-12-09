@@ -976,7 +976,7 @@ def fetch_fixed_time_quantiles(client, table_name, reference_table,
 def spaghetti_plot(client, table_name, reference_table, 
                        geo_level, geo_values, 
                        geo_column='basin_id', reference_column='basin_id',
-                       value='value', n=100):
+                       value='value', n=25):
 
     # make sure we have a dataset name
     if dataset == None:
@@ -1015,7 +1015,9 @@ def spaghetti_plot(client, table_name, reference_table,
     df = df.pivot(columns='run_id', index='date', values='value')
 
     fig = px.line(df, 
-        title='', template=netsi)
+                  title='', labels={"date": "Date", "value": value.capitalize()},
+                  template=netsi)
     fig.update_traces(line=dict(color="maroon", width=2)) 
     fig.update_traces(opacity=0.1, showlegend=False)
+
     return fig
