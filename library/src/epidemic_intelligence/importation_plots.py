@@ -424,9 +424,12 @@ def create_sankey_plot(data):
 
   return fig
 
-def sankey(client, table_name, reference_table, source_geo_level, target_geo_level, source_values, target_values, date_range, value="importations",
+def sankey(client, table_name, reference_table, 
+            source_geo_level, target_geo_level, 
+            source_values, target_values, 
+            date_range, value="importations",
            cutoff=0.05, source_resolution=None, target_resolution=None, domestic=True,
-           source_col='source_basin', target_col='target_basin', reference_col='basin_id',
+           source_column='source_basin', target_column='target_basin', reference_column='basin_id',
            n_sources=None, n_targets=None):
     """ Creates a sankey diagram to show flow of cases.
      
@@ -464,9 +467,9 @@ def sankey(client, table_name, reference_table, source_geo_level, target_geo_lev
         value=value,
         n_sources=n_sources,
         n_targets=n_targets,
-        source_col=source_col, 
-        target_col=target_col, 
-        reference_col=reference_col,
+        source_col=source_column, 
+        target_col=target_column, 
+        reference_col=reference_column,
     )
     
     # Execute the query to get the data
@@ -628,7 +631,7 @@ def create_bar_chart(data: pd.DataFrame, title: str = "Relative Risk of Importat
 
 def relative_risk(client, table_name, reference_table, source_geo_level, target_geo_level, source_values, target_values, date_range, value="importations",
            cutoff=0.05, n=20, output_resolution=None, domestic=True, 
-           source_col='source_basin', target_col='target_basin', reference_col='basin_id',
+           source_column='source_basin', target_column='target_basin', reference_column='basin_id',
            title="Relative Risk of Importation", xlabel="Relative Risk of Importation", 
            ylabel=None):
     
@@ -666,9 +669,9 @@ def relative_risk(client, table_name, reference_table, source_geo_level, target_
         domestic=domestic,
         n=n,
         value=value,
-        source_col=source_col, 
-        target_col=target_col, 
-        reference_col=reference_col,
+        source_col=source_column, 
+        target_col=target_column, 
+        reference_col=reference_column,
     )
     
     # Execute the query to get the data

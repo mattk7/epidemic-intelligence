@@ -813,3 +813,164 @@ def fixed_time_boxplot(client, table_name, reference_table,
         ))
         
     return fig
+
+
+def fetch_fixed_time_quantiles(client, table_name, reference_table,  
+                       geo_level, geo_values, 
+                       confidences,
+                       geo_column='basin_id', reference_column='basin_id', 
+                       num_clusters=1, num_features=10, grouping_method='mse', 
+                       value='value',
+                       dataset=None, delete_data=True, kmeans_table=False,):
+    
+    # make sure we have a dataset name
+    if dataset == None:
+        dataset = generate_random_hash()
+                
+    # create dataset if it doesn't already exist
+    create_dataset(client, dataset)
+
+    # Step 1: Create initial data table
+    query_base = f""" CREATE OR REPLACE TABLE `{dataset}.data` AS
+            SELECT 
+                t.date,
+                t.run_id,
+                SUM(t.{value}) as value
+            FROM `{table_name}` as t
+            JOIN `{reference_table}` AS g
+                ON g.{reference_column} = t.{geo_column}
+            WHERE 
+                {build_geographic_filter(geo_level, geo_values, alias='g')}
+            GROUP BY date, run_id
+            ORDER BY date
+            ;"""
+
+    df = client.query(query_base).result()  # Execute the query to create the table
+
+    if kmeans_table is False:
+        if num_clusters > 1:
+
+            # Step 2: Create the curve distance table for mse and abc
+            query_distances = f"""
+            CREATE OR REPLACE TABLE `{dataset}.curve_distances` AS
+            SELECT
+                a.run_id AS run_id_a,
+                b.run_id AS run_id_b,
+                AVG(POW(a.value - b.value, 2)) AS mse,
+                SUM(ABS(a.value - b.value)) AS abc
+            FROM
+                `{dataset}.data` a
+            JOIN
+                `{dataset}.data` b
+            ON
+                a.date = b.date
+            GROUP BY
+                run_id_a, run_id_b
+            """
+            client.query(query_distances).result()  # Execute the query to create the table
+
+            # Step 3: Create the distance matrix
+            query_distance_matrix = f"""
+            CREATE OR REPLACE TABLE `{dataset}.distance_matrix`
+            CLUSTER BY run_id AS --optimizations
+            SELECT
+                run_id_a AS run_id,
+                    ARRAY_AGG(STRUCT(run_id_b, {grouping_method}) ORDER BY run_id_b ASC) AS distances
+            FROM
+                `{dataset}.curve_distances`
+            GROUP BY
+                run_id_a;
+            """
+            client.query(query_distance_matrix).result()  # Execute the query to create the table
+
+        # Step 4: Handle case when num_clusters = 1
+        if num_clusters == 1:
+            query_assign_all_to_one_cluster = f"""
+            CREATE OR REPLACE TABLE `{dataset}.kmeans_results`
+            CLUSTER BY CENTROID_ID, run_id AS
+            SELECT DISTINCT
+                run_id,
+                1 AS centroid_id  -- Assign all runs to centroid 1
+            FROM 
+                `{dataset}.data`
+            """
+            s = time.time()
+            client.query(query_assign_all_to_one_cluster).result()  # Execute the query to assign all runs to centroid 1
+            
+        else:
+            # Step 4: Create the K-means model by selecting the first num_features features based on actual distances
+            query_create_model = f"""
+            CREATE OR REPLACE MODEL `{dataset}.kmeans_model`
+            OPTIONS(model_type='kmeans', num_clusters={num_clusters}) AS
+            SELECT
+                run_id,
+                ARRAY(
+                    SELECT distance.{grouping_method} 
+                    FROM UNNEST(distances) AS distance 
+                    WHERE distance.run_id_b <= {num_features}  -- Select only the first num_features
+                ) AS features
+            FROM
+                `{dataset}.distance_matrix`;
+            """
+            s = time.time()
+            client.query(query_create_model).result()  # Execute the model creation
+
+            # Step 5: Apply K-means clustering and save results in a table
+            query_kmeans = f"""
+            CREATE OR REPLACE TABLE `{dataset}.kmeans_results`
+            CLUSTER BY CENTROID_ID, run_id AS
+            SELECT
+                *
+            FROM
+                ML.PREDICT(MODEL `{dataset}.kmeans_model`,
+                    (SELECT
+                        run_id,
+                        ARRAY(
+                            SELECT distance.{grouping_method} 
+                            FROM UNNEST(distances) AS distance 
+                            WHERE distance.run_id_b <= {num_features}  
+                        ) AS features
+                    FROM
+                        `{dataset}.distance_matrix`)
+                ) AS predictions
+            """
+            s = time.time()
+            client.query(query_kmeans).result()  # Execute the model creation
+
+    # creating the quantile queries
+    conf_clause = ["PERCENTILE_CONT(value, 0.50) OVER (PARTITION BY CENTROID_ID, date) AS median"]
+    for confidence in set(confidences):
+        conf_clause.append(f"PERCENTILE_CONT(value, {round((1-confidence)/2, 10)}) OVER (PARTITION BY CENTROID_ID, date) AS {str(round((1-confidence)/2, 10)).split('.')[-1]}, \
+    PERCENTILE_CONT(value, {round((1+confidence)/2, 10)}) OVER (PARTITION BY CENTROID_ID, date) AS {str(round((1+confidence)/2, 10)).split('.')[-1]}")
+        # print(', '.join(clause for clause in conf_clause))
+
+    fixed_time_quantiles = f'''
+        WITH centroid_data AS (
+            SELECT 
+                d.date,
+                d.value,
+                d.run_id,
+                k.CENTROID_ID
+            FROM {dataset}.data d
+            JOIN `{f'{dataset}.kmeans_results' if kmeans_table is False else kmeans_table}` k ON d.run_id = k.run_id        )
+
+        SELECT 
+            CENTROID_ID,
+            date,
+            {', '.join(conf_clause)}
+        FROM centroid_data
+        GROUP BY CENTROID_ID, date, value
+        ORDER BY CENTROID_ID, date;
+        '''
+
+    df = client.query(fixed_time_quantiles).result().to_dataframe()  # Execute the query to create the table
+
+    if delete_data:
+        client.delete_dataset(
+            dataset,
+            delete_contents=True,  # Set to False if you only want to delete an empty dataset
+            not_found_ok=True      # If True, no error is raised if the dataset does not exist
+        )
+        print(f"BigQuery dataset `{client.project}.{dataset}` removed successfully, or it did not exist.")
+
+    return df
