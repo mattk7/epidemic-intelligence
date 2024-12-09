@@ -4,6 +4,7 @@ from google.cloud import bigquery
 import pandas as pd
 import time
 import plotly.graph_objects as go
+import plotly.express as px
 
 def functional_boxplot(client, table_name, reference_table,  
                        geo_level, geo_values, 
@@ -37,7 +38,7 @@ def functional_boxplot(client, table_name, reference_table,
 
     df = client.query(query_base).result()  # Execute the query to create the table
 
-    if num_clusters == 1 and centrality_method not in ['mse', 'abc']:
+    if num_clusters == 1 and centrality_method in ['mse', 'abc']:
         # Step 2: Create the curve distance table for mse and abc
         query_distances = f"""
         CREATE OR REPLACE TABLE `{dataset}.curve_distances` AS
@@ -122,11 +123,9 @@ def functional_boxplot(client, table_name, reference_table,
                     `{dataset}.distance_matrix`)
             ) AS predictions
         """
-        s = time.time()
         client.query(query_kmeans).result()  # Execute the model creation
 
     # Step 6: Get summed distances for abc and mse
-    s = time.time()
     save_sum_distances = f"""CREATE OR REPLACE TABLE `{dataset}.total_distances_table` AS
         WITH a AS (
             SELECT 
@@ -170,8 +169,7 @@ def functional_boxplot(client, table_name, reference_table,
         client.query(save_sum_distances).result()  # Execute the model creation
 
     # or do the same for mbd
-    s = time.time()
-    mbd = f"""
+    mbd = f"""CREATE OR REPLACE TABLE `{dataset}.total_distances_table` AS 
         WITH cume_dist AS (
             SELECT DISTINCT  data.run_id, date, CENTROID_ID,
             CUME_DIST() OVER(PARTITION BY date, CENTROID_ID ORDER BY value ASC) AS rank_asc,
@@ -940,8 +938,8 @@ def fetch_fixed_time_quantiles(client, table_name, reference_table,
     # creating the quantile queries
     conf_clause = ["PERCENTILE_CONT(value, 0.50) OVER (PARTITION BY CENTROID_ID, date) AS median"]
     for confidence in set(confidences):
-        conf_clause.append(f"PERCENTILE_CONT(value, {round((1-confidence)/2, 10)}) OVER (PARTITION BY CENTROID_ID, date) AS {str(round((1-confidence)/2, 10)).split('.')[-1]}, \
-    PERCENTILE_CONT(value, {round((1+confidence)/2, 10)}) OVER (PARTITION BY CENTROID_ID, date) AS {str(round((1+confidence)/2, 10)).split('.')[-1]}")
+        conf_clause.append(f"PERCENTILE_CONT(value, {round((1-confidence)/2, 10)}) OVER (PARTITION BY CENTROID_ID, date) AS '{str(round((1-confidence)/2, 10))}', \
+    PERCENTILE_CONT(value, {round((1+confidence)/2, 10)}) OVER (PARTITION BY CENTROID_ID, date) AS '{str(round((1+confidence)/2, 10))}'")
         # print(', '.join(clause for clause in conf_clause))
 
     fixed_time_quantiles = f'''
@@ -974,3 +972,50 @@ def fetch_fixed_time_quantiles(client, table_name, reference_table,
         print(f"BigQuery dataset `{client.project}.{dataset}` removed successfully, or it did not exist.")
 
     return df
+
+def spaghetti_plot(client, table_name, reference_table, 
+                       geo_level, geo_values, 
+                       geo_column='basin_id', reference_column='basin_id',
+                       value='value', n=100):
+
+    # make sure we have a dataset name
+    if dataset == None:
+        dataset = generate_random_hash()
+        
+    # create dataset if it doesn't already exist
+    create_dataset(client, dataset)
+
+    # Step 1: Create initial data table
+    query_base = f"""
+        WITH sampled_run_ids AS (
+            SELECT DISTINCT run_id
+            FROM `{table_name}`
+            ORDER BY RAND()
+            LIMIT {n} 
+        )
+        SELECT 
+            t.date,
+            t.run_id,
+            SUM(t.{value}) as value
+        FROM `{table_name}` AS t
+        JOIN `{reference_table}` AS g
+            ON g.{reference_column} = t.{geo_column}
+        JOIN sampled_run_ids AS s
+            ON t.run_id = s.run_id
+        WHERE 
+            {build_geographic_filter(geo_level, geo_values, alias='g')}
+        GROUP BY date, run_id
+        ORDER BY date;
+
+            ;"""
+
+    df = client.query(query_base).result()  # Execute the query to create the table
+
+    # pivot data
+    df = df.pivot(columns='run_id', index='date', values='value')
+
+    fig = px.line(df, 
+        title='', template=netsi)
+    fig.update_traces(line=dict(color="maroon", width=2)) 
+    fig.update_traces(opacity=0.1, showlegend=False)
+    return fig
