@@ -11,7 +11,7 @@ def execute(client, query):
 
     return result_df
 
-def create_dataset(client, dataset_name):
+def create_dataset(client, dataset_name, overwrite=True):
     # Define the dataset ID (project ID and dataset name)
     dataset_id = f"{client.project}.{dataset_name}"
     
@@ -19,6 +19,11 @@ def create_dataset(client, dataset_name):
     dataset = bigquery.Dataset(dataset_id)
 
     # Use the client to create the dataset
+    if overwrite:
+        dataset = client.create_dataset(dataset, exists_ok=True) 
+        print(f"Dataset `{dataset_id}` created.")
+        return True
+
     try:
         dataset = client.create_dataset(dataset, exists_ok=False) 
         print(f"Dataset `{dataset_id}` created.")
@@ -26,6 +31,8 @@ def create_dataset(client, dataset_name):
     except(Exception):
         print(f"Dataset `{dataset_id}` already exists. Any tables in it may be overwritten.")
         if input('Enter "CONFIRM" if you wish to proceed: ') == 'CONFIRM':
+            client.create_dataset(dataset, exists_ok=True)
+            print(f"Dataset `{dataset_id}` created.")
             return True
         else:
             print('Aborting process.')

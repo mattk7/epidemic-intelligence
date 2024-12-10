@@ -28,7 +28,7 @@ def summarize_runs(client, table_name, destination,
                 run_id,
                 VARIANCE(direction) AS direction_variance
             FROM run_direction
-            WHERE previous_value IS NOT NULL
+            WHERE direction IS NOT NULL
             GROUP BY run_id
             ORDER BY direction_variance ASC
             LIMIT 1
@@ -67,12 +67,12 @@ def summarize_runs(client, table_name, destination,
         ), median_run_id AS (
             SELECT
                 run_id,
-                SUM(run_variance)
+                SUM(run_variance) AS sum_run_variance
             FROM
                 run_variability
             GROUP BY run_id
             ORDER BY
-                run_variance ASC
+                sum_run_variance ASC
             LIMIT 1 )
                 """
         

@@ -13,16 +13,16 @@ root = "src/epidemic_intelligence"
 
 [project]
 name = "epidemic-intelligence"
-version = "0.4.2"
+version = "0.4.5"
 authors = [
     { name = "Elijah Sandler", email = "sandler.e@northeastern.edu" },
 ]
-description = "A data visualization Python package to explore large-scale spatio-temporal simulation data"
+description = "A data visualization Python package to explore large-scale spatio-temporal simulation data."
 readme = "README.md"
 requires-python = ">=3.8"
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
+#    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
 

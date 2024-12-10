@@ -12,14 +12,15 @@ def functional_boxplot(client, table_name, reference_table,
                        value='value',
                        num_clusters=1, num_features=10, grouping_method='mse', kmeans_table=False,
                        centrality_method='mse', threshold=1.5,
-                       dataset=None, delete_data=True):
+                       dataset=None, delete_data=True, overwrite=False):
 
     # make sure we have a dataset name
     if dataset == None:
         dataset = generate_random_hash()
         
     # create dataset if it doesn't already exist
-    create_dataset(client, dataset)
+    if not create_dataset(client, dataset, overwrite=overwrite):
+        return False
 
     # Step 1: Create initial data table
     query_base = f""" CREATE OR REPLACE TABLE `{dataset}.data` AS
@@ -38,7 +39,7 @@ def functional_boxplot(client, table_name, reference_table,
 
     df = client.query(query_base).result()  # Execute the query to create the table
 
-    if num_clusters == 1 and centrality_method in ['mse', 'abc']:
+    if num_clusters != 1 or centrality_method in ['mse', 'abc']:
         # Step 2: Create the curve distance table for mse and abc
         query_distances = f"""
         CREATE OR REPLACE TABLE `{dataset}.curve_distances` AS
@@ -81,7 +82,7 @@ def functional_boxplot(client, table_name, reference_table,
             run_id,
             1 AS centroid_id  -- Assign all runs to centroid 1
         FROM 
-            `{dataset}.distance_matrix`
+            `{dataset}.data`
         """
         s = time.time()
         client.query(query_assign_all_to_one_cluster).result()  # Execute the query to assign all runs to centroid 1
@@ -377,7 +378,7 @@ def functional_boxplot(client, table_name, reference_table,
             'text': f"Functional Boxplot",
             },
         xaxis_title="Date",
-        yaxis_title="Incidence",
+        yaxis_title=value.capitalize(),
         template=netsi,
 
     )
@@ -479,7 +480,7 @@ def fixed_time_boxplot(client, table_name, reference_table,
                        geo_column='basin_id', reference_column='basin_id', 
                        num_clusters=1, num_features=10, grouping_method='mse', 
                        value='value',
-                       dataset=None, delete_data=True, kmeans_table=False,
+                       dataset=None, delete_data=True, kmeans_table=False, overwrite=False,
                        confidence=.9, full_range = False, outlying_points = True):
 
     # make sure we have a dataset name
@@ -487,7 +488,8 @@ def fixed_time_boxplot(client, table_name, reference_table,
         dataset = generate_random_hash()
                 
     # create dataset if it doesn't already exist
-    create_dataset(client, dataset)
+    if not create_dataset(client, dataset, overwrite=overwrite):
+        return False
 
     # Step 1: Create initial data table
     query_base = f""" CREATE OR REPLACE TABLE `{dataset}.data` AS
@@ -716,7 +718,7 @@ def fixed_time_boxplot(client, table_name, reference_table,
         if full_range:
             # FULL RANGE
             fig.add_trace(go.Scatter(
-                name=f'Minimum',
+                name=f'Min/Max',
                 x=df_group.index,
                 y=df_group['Min'],
                 marker=dict(color="#444"),
@@ -726,7 +728,7 @@ def fixed_time_boxplot(client, table_name, reference_table,
                 legendgroup=str(group)  # Assign to legend group
             ))
             fig.add_trace(go.Scatter(
-                name=f'Full Range',
+                name=f'Min/Max',
                 x=df_group.index,
                 y=df_group['Max'],
                 mode='lines',
@@ -734,14 +736,14 @@ def fixed_time_boxplot(client, table_name, reference_table,
                 line=dict(width=0),
                 fillcolor=hex_to_rgba(colors[group-1], .2),
                 fill='tonexty',
-                showlegend=False,
+                showlegend=True,
                 legendgroup=str(group)  # Assign to legend group
             ))
         
         
         # MIDDLE 90%
         fig.add_trace(go.Scatter(
-            name=f'Minimum',
+            name=str(confidence).split(".")[-1] + 'CI',
             x=df_group.index,
             y=df_group['LowBound'],
             marker=dict(color="#444"),
@@ -751,7 +753,7 @@ def fixed_time_boxplot(client, table_name, reference_table,
             legendgroup=str(group)  # Assign to legend group
         ))
         fig.add_trace(go.Scatter(
-            name=f'Middle {confidence * 100}%',
+            name=str(confidence).split(".")[-1] + 'CI',
             x=df_group.index,
             y=df_group['HighBound'],
             mode='lines',
@@ -759,13 +761,13 @@ def fixed_time_boxplot(client, table_name, reference_table,
             line=dict(width=0),
             fillcolor=hex_to_rgba(colors[group-1], .2),
             fill='tonexty',
-            showlegend=False,
+            showlegend=True,
             legendgroup=str(group)  # Assign to legend group
         ))
         
         # MIDDLE 50%
         fig.add_trace(go.Scatter(
-            name=f'Minimum',
+            name=f'IQR',
             x=df_group.index,
             y=df_group['Q1'],
             marker=dict(color="#444"),
@@ -775,7 +777,7 @@ def fixed_time_boxplot(client, table_name, reference_table,
             legendgroup=str(group)  # Assign to legend group
         ))
         fig.add_trace(go.Scatter(
-            name=f'Group {group}',
+            name=f'IQR',
             x=df_group.index,
             y=df_group['Q3'],
             mode='lines',
@@ -819,14 +821,15 @@ def fetch_fixed_time_quantiles(client, table_name, reference_table,
                        geo_column='basin_id', reference_column='basin_id', 
                        num_clusters=1, num_features=10, grouping_method='mse', 
                        value='value',
-                       dataset=None, delete_data=True, kmeans_table=False,):
+                       dataset=None, delete_data=True, kmeans_table=False, overwrite=False):
     
     # make sure we have a dataset name
     if dataset == None:
         dataset = generate_random_hash()
                 
     # create dataset if it doesn't already exist
-    create_dataset(client, dataset)
+    if not create_dataset(client, dataset, overwrite=overwrite):
+        return False
 
     # Step 1: Create initial data table
     query_base = f""" CREATE OR REPLACE TABLE `{dataset}.data` AS
@@ -938,8 +941,8 @@ def fetch_fixed_time_quantiles(client, table_name, reference_table,
     # creating the quantile queries
     conf_clause = ["PERCENTILE_CONT(value, 0.50) OVER (PARTITION BY CENTROID_ID, date) AS median"]
     for confidence in set(confidences):
-        conf_clause.append(f"PERCENTILE_CONT(value, {round((1-confidence)/2, 10)}) OVER (PARTITION BY CENTROID_ID, date) AS '{str(round((1-confidence)/2, 10))}', \
-    PERCENTILE_CONT(value, {round((1+confidence)/2, 10)}) OVER (PARTITION BY CENTROID_ID, date) AS '{str(round((1+confidence)/2, 10))}'")
+        conf_clause.append(f"PERCENTILE_CONT(value, {round((1-confidence)/2, 10)}) OVER (PARTITION BY CENTROID_ID, date) AS perc{str(round((1-confidence)/2, 10)).split('.')[-1]}, \
+    PERCENTILE_CONT(value, {round((1+confidence)/2, 10)}) OVER (PARTITION BY CENTROID_ID, date) AS perc{str(round((1+confidence)/2, 10)).split('.')[-1]}")
         # print(', '.join(clause for clause in conf_clause))
 
     fixed_time_quantiles = f'''
@@ -978,14 +981,6 @@ def spaghetti_plot(client, table_name, reference_table,
                        geo_column='basin_id', reference_column='basin_id',
                        value='value', n=25):
 
-    # make sure we have a dataset name
-    if dataset == None:
-        dataset = generate_random_hash()
-        
-    # create dataset if it doesn't already exist
-    create_dataset(client, dataset)
-
-    # Step 1: Create initial data table
     query_base = f"""
         WITH sampled_run_ids AS (
             SELECT DISTINCT run_id
@@ -1007,9 +1002,9 @@ def spaghetti_plot(client, table_name, reference_table,
         GROUP BY date, run_id
         ORDER BY date;
 
-            ;"""
+            """
 
-    df = client.query(query_base).result()  # Execute the query to create the table
+    df = client.query(query_base).result().to_dataframe()  # Execute the query to create the table
 
     # pivot data
     df = df.pivot(columns='run_id', index='date', values='value')
@@ -1017,7 +1012,7 @@ def spaghetti_plot(client, table_name, reference_table,
     fig = px.line(df, 
                   title='', labels={"date": "Date", "value": value.capitalize()},
                   template=netsi)
-    fig.update_traces(line=dict(color="maroon", width=2)) 
+    fig.update_traces(line=dict(color=netsi.layout.colorway[0], width=2)) 
     fig.update_traces(opacity=0.1, showlegend=False)
 
     return fig

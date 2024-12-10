@@ -603,8 +603,7 @@ def build_bar_query(table_name, reference_table, source_geo_level, target_geo_le
     
     return query
 
-def create_bar_chart(data: pd.DataFrame, title: str = "Relative Risk of Importation", 
-                     xlabel: str = "Relative Risk of Importation", ylabel: str = "Geography"):
+def create_bar_chart(data: pd.DataFrame, title: str = "Relative Risk of Importation", ):
     fig = px.bar(
     data.iloc[:, :], x="total_importations", y="target", orientation="h", 
     labels={
@@ -632,8 +631,7 @@ def create_bar_chart(data: pd.DataFrame, title: str = "Relative Risk of Importat
 def relative_risk(client, table_name, reference_table, source_geo_level, target_geo_level, source_values, target_values, date_range, value="importations",
            cutoff=0.05, n=20, output_resolution=None, domestic=True, 
            source_column='source_basin', target_column='target_basin', reference_column='basin_id',
-           title="Relative Risk of Importation", xlabel="Relative Risk of Importation", 
-           ylabel=None):
+           ):
     
     """ Creates a sankey diagram to show flow of cases.
      
@@ -678,8 +676,7 @@ def relative_risk(client, table_name, reference_table, source_geo_level, target_
     data = execute(client, query)
     
     # Create and return the Sankey plot
-    return create_bar_chart(data, title, xlabel, 
-                            ylabel if ylabel is not None else output_resolution)
+    return create_bar_chart(data, )
 
 def fetch_relative_risk_data(fig):
     df = pd.DataFrame({fig.layout.xaxis.title.text.lower().replace(" ", "_"): fig.data[0].x}, index=fig.data[0].y)
