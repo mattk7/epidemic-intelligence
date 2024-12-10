@@ -952,7 +952,7 @@ def fetch_fixed_time_quantiles(client, table_name, reference_table,
                 d.value,
                 d.run_id,
                 k.CENTROID_ID
-            FROM {dataset}.data d
+            FROM `{dataset}.data` d
             JOIN `{f'{dataset}.kmeans_results' if kmeans_table is False else kmeans_table}` k ON d.run_id = k.run_id        )
 
         SELECT 

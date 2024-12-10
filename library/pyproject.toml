@@ -13,7 +13,7 @@ root = "src/epidemic_intelligence"
 
 [project]
 name = "epidemic-intelligence"
-version = "0.4.5"
+version = "0.4.8"
 authors = [
     { name = "Elijah Sandler", email = "sandler.e@northeastern.edu" },
 ]
@@ -36,5 +36,5 @@ dependencies = [
   "db-dtypes>1.0.0"
 ]
 
-[project.urls]
-Homepage = "https://github.com/mattk7/viz-book-public/library"
+# [project.urls]
+# Homepage = "https://github.com/mattk7/viz-book-public/library"

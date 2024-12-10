@@ -137,7 +137,7 @@ def summarize_runs(client, table_name, destination,
         print('''Please select a valid method: median, mean, mbd, ftvariance, or directional.
               Descriptions of these methods can be found in the epidemic-intelligence documentation.''')
         
-def aggregate_table(client, table_name, destination, 
+def aggregate_importations(client, table_name, destination, 
                     source_column = 'source_basin', target_column = 'target_basin', 
                     value_column = 'importations',  run_id_column = None,
                     compartment_column = 'compartment',
@@ -208,3 +208,68 @@ def aggregate_table(client, table_name, destination,
         
         execute(client, agg_query)
         client.delete_table(epitable, not_found_ok=True)
+
+        return True
+
+
+def aggregate_sir(client, table_name, destination, 
+                    geo_column, value_columns,  run_id_column = 'run_id',
+                    date='epi'):
+    
+    if isinstance(value_columns, str):
+        value_columns = [value_columns]
+    agg_values = ", ".join([f"SUM({col}) AS {col}" for col in value_columns])
+    
+    if date in ['iso']:
+        agg_query = f"""
+        CREATE OR REPLACE TABLE `{destination}` AS
+        SELECT
+            {run_id_column} AS run_id, 
+            {geo_column} AS {geo_column}, 
+            {agg_values},
+            {"CAST(EXTRACT(ISOYEAR FROM date) AS STRING) || 'W' || LPAD(CAST(EXTRACT(ISOWEEK FROM date) AS STRING), 2, '0')" if date=='iso' else 't.date'} AS date
+        FROM
+            `{table_name}` AS t
+        GROUP BY
+            run_id,
+            {geo_column},
+            date
+        """
+        execute(client, agg_query)
+
+    elif date == 'epi':
+        epiweek_dict = {}
+        for year in range(1950, 2100):
+            for month in range(1, 13):
+                for day in range (1, 32):
+                    try:
+                        # epiweek_dict[f'{year:04d}-{month:02d}-{day:02d}'] = Week.fromdate(ddate(year, month, day)).cdcformat()
+                        epiweek_dict[ddate(year, month, day)] = Week.fromdate(ddate(year, month, day)).cdcformat()
+                    except(ValueError):
+                        pass
+
+        tn = pd.DataFrame(epiweek_dict, index=['epiweek']).T.reset_index(names='date')
+        epitable = table_name.split('.')[0] + '.' + generate_random_hash()
+        client.load_table_from_dataframe(tn, epitable).result()
+        
+        agg_query = f"""
+            CREATE OR REPLACE TABLE `{destination}` AS
+            SELECT
+                {run_id_column} AS run_id, 
+                {geo_column} AS {geo_column}, 
+                {agg_values}, 
+                e.epiweek AS date
+            FROM
+                `{table_name}` AS t
+            JOIN
+                `{epitable}` AS e ON e.date = t.date
+            GROUP BY
+                run_id,
+                {geo_column},
+                date
+            """
+        
+        execute(client, agg_query)
+        client.delete_table(epitable, not_found_ok=True)
+
+        return True
