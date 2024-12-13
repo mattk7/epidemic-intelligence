@@ -1,4 +1,0 @@
-# NetSI Visualization Handbook
-
-```{tableofcontents}
-```

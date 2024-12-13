@@ -15,6 +15,12 @@ latex:
   latex_documents:
     targetname: book.tex
 
+parse:
+  myst_enable_extensions:
+    # don't forget to list any other extensions you want enabled,
+    # including those that are enabled by default! See here: https://jupyterbook.org/en/stable/customize/config.html
+    - html_image
+
 # require.js to get plotly to display correctly
 sphinx:
   config:
@@ -36,3 +42,5 @@ repository:
 html:
   use_issues_button: true
   use_repository_button: true
+  include_binder: false
+  include_plotlyjs: true
