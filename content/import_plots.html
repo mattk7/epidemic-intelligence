@@ -1,0 +1,710 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>importation_plots &#8212; Complex Intelligence Lab Visualization Handbook</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+
+  
+  <link href="../_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/sphinx-book-theme.css?v=a3416100" />
+    <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css?v=13237357" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css?v=be8a1c11" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-thebe.css?v=4fa983c6" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
+  <script src="../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+    <script src="../_static/documentation_options.js?v=9eb32ce0"></script>
+    <script src="../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=f281be69"></script>
+    <script src="../_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../_static/togglebutton.js?v=4a39c7ea"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script async="async" src="../_static/sphinx-thebe.js?v=c100c467"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'content/import_plots';</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="boxplots" href="boxplots.html" />
+    <link rel="prev" title="processing" href="processing.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search this book..."
+         aria-label="Search this book..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="setup.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/logo.png" class="logo__image only-light" alt="Complex Intelligence Lab Visualization Handbook - Home"/>
+    <script>document.write(`<img src="../_static/logo.png" class="logo__image only-dark" alt="Complex Intelligence Lab Visualization Handbook - Home"/>`);</script>
+  
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+ <script>
+ document.write(`
+   <button class="btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        
+        <ul class="nav bd-sidenav bd-sidenav__home-link">
+            <li class="toctree-l1">
+                <a class="reference internal" href="setup.html">
+                    Introduction to epidemic-intelligence
+                </a>
+            </li>
+        </ul>
+        <ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="processing.html">processing</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">importation_plots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="boxplots.html">boxplots</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><button class="sidebar-toggle primary-toggle btn btn-sm" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</button></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+
+
+
+<div class="dropdown dropdown-source-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Source repositories">
+    <i class="fab fa-github"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="https://github.com/mattk7/epidemic-intelligence/handbook" target="_blank"
+   class="btn btn-sm btn-source-repository-button dropdown-item"
+   title="Source repository"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fab fa-github"></i>
+  </span>
+<span class="btn__text-container">Repository</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li><a href="https://github.com/mattk7/epidemic-intelligence/handbook/issues/new?title=Issue%20on%20page%20%2Fcontent/import_plots.html&body=Your%20issue%20content%20here." target="_blank"
+   class="btn btn-sm btn-source-issues-button dropdown-item"
+   title="Open an issue"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-lightbulb"></i>
+  </span>
+<span class="btn__text-container">Open issue</span>
+</a>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+
+
+<div class="dropdown dropdown-download-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Download this page">
+    <i class="fas fa-download"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="../_sources/content/import_plots.ipynb" target="_blank"
+   class="btn btn-sm btn-download-source-button dropdown-item"
+   title="Download source file"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file"></i>
+  </span>
+<span class="btn__text-container">.ipynb</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li>
+<button onclick="window.print()"
+  class="btn btn-sm btn-download-pdf-button dropdown-item"
+  title="Print to PDF"
+  data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file-pdf"></i>
+  </span>
+<span class="btn__text-container">.pdf</span>
+</button>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script>
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm pst-navbar-icon search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+<button class="sidebar-toggle secondary-toggle btn btn-sm" title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</button>
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1>importation_plots</h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+            <div>
+                <h2> Contents </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#area-plot">area_plot</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#parameters">Parameters</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#returns">Returns</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#sankey">sankey</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1">Parameters</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id2">Returns</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#relative-risk">relative_risk</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id3">Parameters</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id4">Returns</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#fetching-data-from-importation-plots">Fetching data from importation plots</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#fetch-area-plot-data">fetch_area_plot_data</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#id5">Parameters</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#id6">Returns</a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#fetch-sankey-data">fetch_sankey_data</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#id7">Parameters</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#id8">Returns</a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#fetch-relative-risk-data">fetch_relative_risk_data</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#id9">Parameters</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#id10">Returns</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section class="tex2jax_ignore mathjax_ignore" id="importation-plots">
+<h1>importation_plots<a class="headerlink" href="#importation-plots" title="Link to this heading">#</a></h1>
+<p>This page contains instructions and documentation for creating Sankey diagrams, relative risk charts, and area plots using importation data.</p>
+<section id="area-plot">
+<h2>area_plot<a class="headerlink" href="#area-plot" title="Link to this heading">#</a></h2>
+<p>Area plots are designed to show a change in comparable values over time; they compare apples to apples. In this example, we use H1N1 predictions from 2010 and show the origin countries for cases travelling from Asia to Europe.</p>
+<section id="parameters">
+<h3>Parameters<a class="headerlink" href="#parameters" title="Link to this heading">#</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">client</span></code> (<code class="docutils literal notranslate"><span class="pre">bigquery.Client</span></code>): BigQuery client object.</p>
+<p><code class="docutils literal notranslate"><span class="pre">table_name</span></code> (<code class="docutils literal notranslate"><span class="pre">str</span></code>): BigQuery table name containing importation data in ‘dataset.table’ form.</p>
+<p><code class="docutils literal notranslate"><span class="pre">reference_table</span></code> (<code class="docutils literal notranslate"><span class="pre">str</span></code>): BigQuery table name containing reference table in ‘dataset.table’ form.</p>
+<p><code class="docutils literal notranslate"><span class="pre">source_geo_level</span></code> (<code class="docutils literal notranslate"><span class="pre">str</span></code>): The name of a column from the reference table. The geographical level used to determine what sources are included.</p>
+<p><code class="docutils literal notranslate"><span class="pre">target_geo_level</span></code> (<code class="docutils literal notranslate"><span class="pre">str</span></code>): The name of a column from the reference table. The geographical level used to determine what targets are included.</p>
+<p><code class="docutils literal notranslate"><span class="pre">source_values</span></code> (<code class="docutils literal notranslate"><span class="pre">str</span></code> or <code class="docutils literal notranslate"><span class="pre">listlike</span></code> or <code class="docutils literal notranslate"><span class="pre">None</span></code>, optional): The source(s) to be included. A value or subset of values from the <code class="docutils literal notranslate"><span class="pre">source_geo_level</span></code> column. If None, then all values will be included. Defaults to None.</p>
+<p><code class="docutils literal notranslate"><span class="pre">target_values</span></code> (<code class="docutils literal notranslate"><span class="pre">str</span></code> or <code class="docutils literal notranslate"><span class="pre">listlike</span></code> or <code class="docutils literal notranslate"><span class="pre">None</span></code>, optional): The target(s) to be included. A value or subset of values from the <code class="docutils literal notranslate"><span class="pre">target_geo_level</span></code> column. If None, then all values will be included. Default to None.</p>
+<p><code class="docutils literal notranslate"><span class="pre">source_column</span></code> (<code class="docutils literal notranslate"><span class="pre">str</span></code>, optional): Name of column in original table containing source identifier. Defaults to ‘source_basin’.</p>
+<p><code class="docutils literal notranslate"><span class="pre">target_column</span></code> (<code class="docutils literal notranslate"><span class="pre">str</span></code>, optional): Name of column in original table containing target identifier. Defaults to ‘target_basin’.</p>
+<p><code class="docutils literal notranslate"><span class="pre">reference_column</span></code> (<code class="docutils literal notranslate"><span class="pre">str</span></code>, optional): Name of column in original table containing the geography corresponding to data in <code class="docutils literal notranslate"><span class="pre">source_column</span></code> and <code class="docutils literal notranslate"><span class="pre">target_column</span></code>. Defaults to ‘basin_id’.</p>
+<p><code class="docutils literal notranslate"><span class="pre">output_resolution</span></code> (<code class="docutils literal notranslate"><span class="pre">str</span></code> or <code class="docutils literal notranslate"><span class="pre">None</span></code>, optional): The name of a column from the reference table. If None, then <code class="docutils literal notranslate"><span class="pre">target_geo_level</span></code> will be used. Desired geographical resolution for area plot. Defaults to None.</p>
+<p><code class="docutils literal notranslate"><span class="pre">domestic</span></code> (<code class="docutils literal notranslate"><span class="pre">bool</span></code>, optional): Whether or not domestic cases will be included. Defaults to True. <em>Note: can produce unexpected results.</em></p>
+<p><code class="docutils literal notranslate"><span class="pre">cutoff</span></code> (<code class="docutils literal notranslate"><span class="pre">float</span></code>, optional): From 0 to 1, inclusive. All sources or targets that contribute below this percentage of cases will be grouped into an ‘Other’ category. Set to 0 for no ‘Other’ category. Defaults to 0.05.</p>
+<p><code class="docutils literal notranslate"><span class="pre">value</span></code> (<code class="docutils literal notranslate"><span class="pre">str</span></code>, optional): Name of column in the original table containing the importation value to be analyzed. Defaults to ‘importations’.</p>
+<p><code class="docutils literal notranslate"><span class="pre">display</span></code> (<code class="docutils literal notranslate"><span class="pre">str</span></code>, optional): Whether the source or target of the importations will be visualized. Defaults to ‘source’.</p>
+</section>
+<hr class="docutils" />
+<section id="returns">
+<h3>Returns<a class="headerlink" href="#returns" title="Link to this heading">#</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">fig</span></code> (<code class="docutils literal notranslate"><span class="pre">plotly.graph_objects.Figure</span></code>): Plotly Figure containing visualization.</p>
+</section>
+</section>
+<hr class="docutils" />
+<section id="sankey">
+<h2>sankey<a class="headerlink" href="#sankey" title="Link to this heading">#</a></h2>
+<p>Sankey diagrams are designed to show the relative volume of flow from sources to targets. In this example, we use H1N1 predictions from 2010 and show the origin and destination countries for cases travelling from Asia to Europe.</p>
+<section id="id1">
+<h3>Parameters<a class="headerlink" href="#id1" title="Link to this heading">#</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">client</span></code> (<code class="docutils literal notranslate"><span class="pre">bigquery.Client</span></code>): BigQuery client object.</p>
+<p><code class="docutils literal notranslate"><span class="pre">table_name</span></code> (<code class="docutils literal notranslate"><span class="pre">str</span></code>): BigQuery table name containing importation data in ‘dataset.table’ form.</p>
+<p><code class="docutils literal notranslate"><span class="pre">reference_table</span></code> (<code class="docutils literal notranslate"><span class="pre">str</span></code>): BigQuery table name containing reference table in ‘dataset.table’ form.</p>
+<p><code class="docutils literal notranslate"><span class="pre">date_range</span></code> (<code class="docutils literal notranslate"><span class="pre">list</span> <span class="pre">of</span> <span class="pre">str</span></code>): Start and end date, inclusive. Dates should be formatted as they are in your original table.</p>
+<p><code class="docutils literal notranslate"><span class="pre">source_geo_level</span></code> (<code class="docutils literal notranslate"><span class="pre">str</span></code>): The name of a column from the reference table. The geographical level used to determine what sources are included.</p>
+<p><code class="docutils literal notranslate"><span class="pre">target_geo_level</span></code> (<code class="docutils literal notranslate"><span class="pre">str</span></code>): The name of a column from the reference table. The geographical level used to determine what targets are included.</p>
+<p><code class="docutils literal notranslate"><span class="pre">source_values</span></code> (<code class="docutils literal notranslate"><span class="pre">str</span></code> or <code class="docutils literal notranslate"><span class="pre">listlike</span></code> or <code class="docutils literal notranslate"><span class="pre">None</span></code>, optional): The source(s) to be included. A value or subset of values from the <code class="docutils literal notranslate"><span class="pre">source_geo_level</span></code> column. If None, then all values will be included. Defaults to None.</p>
+<p><code class="docutils literal notranslate"><span class="pre">target_values</span></code> (<code class="docutils literal notranslate"><span class="pre">str</span></code> or <code class="docutils literal notranslate"><span class="pre">listlike</span></code> or <code class="docutils literal notranslate"><span class="pre">None</span></code>, optional): The target(s) to be included. A value or subset of values from the <code class="docutils literal notranslate"><span class="pre">target_geo_level</span></code> column. If None, then all values will be included. Default to None.</p>
+<p><code class="docutils literal notranslate"><span class="pre">source_column</span></code> (<code class="docutils literal notranslate"><span class="pre">str</span></code>, optional): Name of column in original table containing source identifier. Defaults to ‘source_basin’.</p>
+<p><code class="docutils literal notranslate"><span class="pre">target_column</span></code> (<code class="docutils literal notranslate"><span class="pre">str</span></code>, optional): Name of column in original table containing target identifier. Defaults to ‘target_basin’.</p>
+<p><code class="docutils literal notranslate"><span class="pre">reference_column</span></code> (<code class="docutils literal notranslate"><span class="pre">str</span></code>, optional): Name of column in original table containing the geography corresponding to data in <code class="docutils literal notranslate"><span class="pre">source_column</span></code> and <code class="docutils literal notranslate"><span class="pre">target_column</span></code>. Defaults to ‘basin_id’.</p>
+<p><code class="docutils literal notranslate"><span class="pre">source_resolution</span></code> (<code class="docutils literal notranslate"><span class="pre">str</span></code> or <code class="docutils literal notranslate"><span class="pre">None</span></code>, optional): The name of a column from the reference table. Desired geographical resolution for source nodes. If None, then <code class="docutils literal notranslate"><span class="pre">source_geo_level</span></code> will be used. Defaults to None.</p>
+<p><code class="docutils literal notranslate"><span class="pre">target_resolution</span></code> (<code class="docutils literal notranslate"><span class="pre">str</span></code> or <code class="docutils literal notranslate"><span class="pre">None</span></code>, optional): The name of a column from the reference table. Desired geographical resolution for target nodes. If None, then <code class="docutils literal notranslate"><span class="pre">target_geo_level</span></code> will be used. Defaults to None.</p>
+<p><code class="docutils literal notranslate"><span class="pre">domestic</span></code> (<code class="docutils literal notranslate"><span class="pre">bool</span></code>, optional): Whether or not domestic cases will be included. Defaults to True. <em>Note: can produce unexpected results.</em></p>
+<p><code class="docutils literal notranslate"><span class="pre">cutoff</span></code> (<code class="docutils literal notranslate"><span class="pre">float</span></code>, optional): From 0 to 1, inclusive. All sources or targets that contribute below this percentage of cases will be grouped into an ‘Other’ category. Set to 0 for no ‘Other’ category. Defaults to 0.05.</p>
+<p><code class="docutils literal notranslate"><span class="pre">n_sources</span></code> (<code class="docutils literal notranslate"><span class="pre">int</span></code>, optional): The maximum number of source nodes in the sankey. Only this number of sources minus one will show, the rest will be aggregated into ‘Other’ regardless of <code class="docutils literal notranslate"><span class="pre">cutoff</span></code>. Must be a positive integer.</p>
+<p><code class="docutils literal notranslate"><span class="pre">n_targets</span></code> (<code class="docutils literal notranslate"><span class="pre">int</span></code>, optional): The maximum number of target nodes in the sankey. Only this number of targets minus one will show, the rest will be aggregated into ‘Other’ regardless of <code class="docutils literal notranslate"><span class="pre">cutoff</span></code>. Must be a positive integer.</p>
+<p><code class="docutils literal notranslate"><span class="pre">value</span></code> (<code class="docutils literal notranslate"><span class="pre">str</span></code>, optional): Name of column in the original table containing the importation value to be analyzed. Defaults to ‘importations’.</p>
+</section>
+<hr class="docutils" />
+<section id="id2">
+<h3>Returns<a class="headerlink" href="#id2" title="Link to this heading">#</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">fig</span></code> (<code class="docutils literal notranslate"><span class="pre">plotly.graph_objects.Figure</span></code>): Plotly Figure containing visualization.</p>
+</section>
+</section>
+<hr class="docutils" />
+<section id="relative-risk">
+<h2>relative_risk<a class="headerlink" href="#relative-risk" title="Link to this heading">#</a></h2>
+<p>Sankey diagrams are designed to show a the relative volume of flow from sources to targets.</p>
+<section id="id3">
+<h3>Parameters<a class="headerlink" href="#id3" title="Link to this heading">#</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">client</span></code> (<code class="docutils literal notranslate"><span class="pre">bigquery.Client</span></code>): BigQuery client object.</p>
+<p><code class="docutils literal notranslate"><span class="pre">table_name</span></code> (<code class="docutils literal notranslate"><span class="pre">str</span></code>): BigQuery table name containing importation data in ‘dataset.table’ form.</p>
+<p><code class="docutils literal notranslate"><span class="pre">reference_table</span></code> (<code class="docutils literal notranslate"><span class="pre">str</span></code>): BigQuery table name containing reference table in ‘dataset.table’ form.</p>
+<p><code class="docutils literal notranslate"><span class="pre">date_range</span></code> (<code class="docutils literal notranslate"><span class="pre">list</span> <span class="pre">of</span> <span class="pre">str</span></code>): Start and end date, inclusive. Dates should be formatted as they are in your original table.</p>
+<p><code class="docutils literal notranslate"><span class="pre">source_geo_level</span></code> (<code class="docutils literal notranslate"><span class="pre">str</span></code>): The name of a column from the reference table. The geographical level used to determine what sources are included.</p>
+<p><code class="docutils literal notranslate"><span class="pre">target_geo_level</span></code> (<code class="docutils literal notranslate"><span class="pre">str</span></code>): The name of a column from the reference table. The geographical level used to determine what targets are included.</p>
+<p><code class="docutils literal notranslate"><span class="pre">source_values</span></code> (<code class="docutils literal notranslate"><span class="pre">str</span></code> or <code class="docutils literal notranslate"><span class="pre">listlike</span></code> or <code class="docutils literal notranslate"><span class="pre">None</span></code>, optional): The source(s) to be included. A value or subset of values from the <code class="docutils literal notranslate"><span class="pre">source_geo_level</span></code> column. If None, then all values will be included. Defaults to None.</p>
+<p><code class="docutils literal notranslate"><span class="pre">target_values</span></code> (<code class="docutils literal notranslate"><span class="pre">str</span></code> or <code class="docutils literal notranslate"><span class="pre">listlike</span></code> or <code class="docutils literal notranslate"><span class="pre">None</span></code>, optional): The target(s) to be included. A value or subset of values from the <code class="docutils literal notranslate"><span class="pre">target_geo_level</span></code> column. If None, then all values will be included. Default to None.</p>
+<p><code class="docutils literal notranslate"><span class="pre">source_column</span></code> (<code class="docutils literal notranslate"><span class="pre">str</span></code>, optional): Name of column in original table containing source identifier. Defaults to ‘source_basin’.</p>
+<p><code class="docutils literal notranslate"><span class="pre">target_column</span></code> (<code class="docutils literal notranslate"><span class="pre">str</span></code>, optional): Name of column in original table containing target identifier. Defaults to ‘target_basin’.</p>
+<p><code class="docutils literal notranslate"><span class="pre">reference_column</span></code> (<code class="docutils literal notranslate"><span class="pre">str</span></code>, optional): Name of column in original table containing the geography corresponding to data in <code class="docutils literal notranslate"><span class="pre">source_column</span></code> and <code class="docutils literal notranslate"><span class="pre">target_column</span></code>. Defaults to ‘basin_id’.</p>
+<p>output resolution</p>
+<p><code class="docutils literal notranslate"><span class="pre">domestic</span></code> (<code class="docutils literal notranslate"><span class="pre">bool</span></code>, optional): Whether or not domestic cases will be included. Defaults to True. <em>Note: can produce unexpected results.</em></p>
+<p><code class="docutils literal notranslate"><span class="pre">cutoff</span></code> (<code class="docutils literal notranslate"><span class="pre">float</span></code>, optional): From 0 to 1, inclusive. All sources or targets that contribute below this percentage of cases will be grouped into an ‘Other’ category. Set to 0 for no ‘Other’ category. Defaults to 0.05.</p>
+<p><code class="docutils literal notranslate"><span class="pre">n</span></code> (<code class="docutils literal notranslate"><span class="pre">int</span></code>, optional): The maximum number of bars in the relative risk chart. Only this number of targets minus one will show, the rest will be aggregated into ‘Other’ regardless of <code class="docutils literal notranslate"><span class="pre">cutoff</span></code>. Must be a positive integer.</p>
+<p><code class="docutils literal notranslate"><span class="pre">value</span></code> (<code class="docutils literal notranslate"><span class="pre">str</span></code>, optional): Name of column in the original table containing the importation value to be analyzed. Defaults to ‘importations’.</p>
+</section>
+<hr class="docutils" />
+<section id="id4">
+<h3>Returns<a class="headerlink" href="#id4" title="Link to this heading">#</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">fig</span></code> (<code class="docutils literal notranslate"><span class="pre">plotly.graph_objects.Figure</span></code>): Plotly Figure containing visualization.</p>
+</section>
+</section>
+<hr class="docutils" />
+<section id="fetching-data-from-importation-plots">
+<h2>Fetching data from importation plots<a class="headerlink" href="#fetching-data-from-importation-plots" title="Link to this heading">#</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">epidemic_intelligence.importation_plots</span></code> offers functions for extracting the data from importation plots to a pandas dataframe. These functions have one parameter <code class="docutils literal notranslate"><span class="pre">fig</span></code>, which is the plotly Figure generated by the graphing functions.</p>
+<hr class="docutils" />
+<section id="fetch-area-plot-data">
+<h3>fetch_area_plot_data<a class="headerlink" href="#fetch-area-plot-data" title="Link to this heading">#</a></h3>
+<section id="id5">
+<h4>Parameters<a class="headerlink" href="#id5" title="Link to this heading">#</a></h4>
+<p><code class="docutils literal notranslate"><span class="pre">fig</span></code> (<code class="docutils literal notranslate"><span class="pre">plotly.graph_objects.Figure</span></code>): Figure objected returned by <code class="docutils literal notranslate"><span class="pre">area_plot</span></code>.</p>
+</section>
+<section id="id6">
+<h4>Returns<a class="headerlink" href="#id6" title="Link to this heading">#</a></h4>
+<p><code class="docutils literal notranslate"><span class="pre">df</span></code> (<code class="docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code>): pandas dataframe containing data.</p>
+</section>
+</section>
+<hr class="docutils" />
+<section id="fetch-sankey-data">
+<h3>fetch_sankey_data<a class="headerlink" href="#fetch-sankey-data" title="Link to this heading">#</a></h3>
+<section id="id7">
+<h4>Parameters<a class="headerlink" href="#id7" title="Link to this heading">#</a></h4>
+<p><code class="docutils literal notranslate"><span class="pre">fig</span></code> (<code class="docutils literal notranslate"><span class="pre">plotly.graph_objects.Figure</span></code>): Figure objected returned by <code class="docutils literal notranslate"><span class="pre">sankey</span></code>.</p>
+</section>
+<section id="id8">
+<h4>Returns<a class="headerlink" href="#id8" title="Link to this heading">#</a></h4>
+<p><code class="docutils literal notranslate"><span class="pre">df</span></code> (<code class="docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code>): pandas dataframe containing data.</p>
+</section>
+</section>
+<hr class="docutils" />
+<section id="fetch-relative-risk-data">
+<h3>fetch_relative_risk_data<a class="headerlink" href="#fetch-relative-risk-data" title="Link to this heading">#</a></h3>
+<section id="id9">
+<h4>Parameters<a class="headerlink" href="#id9" title="Link to this heading">#</a></h4>
+<p><code class="docutils literal notranslate"><span class="pre">fig</span></code> (<code class="docutils literal notranslate"><span class="pre">plotly.graph_objects.Figure</span></code>): Figure objected returned by <code class="docutils literal notranslate"><span class="pre">relative_risk</span></code>.</p>
+</section>
+<section id="id10">
+<h4>Returns<a class="headerlink" href="#id10" title="Link to this heading">#</a></h4>
+<p><code class="docutils literal notranslate"><span class="pre">df</span></code> (<code class="docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code>): pandas dataframe containing data.</p>
+</section>
+</section>
+</section>
+</section>
+
+    <script type="text/x-thebe-config">
+    {
+        requestKernel: true,
+        binderOptions: {
+            repo: "binder-examples/jupyter-stacks-datascience",
+            ref: "master",
+        },
+        codeMirrorConfig: {
+            theme: "abcdef",
+            mode: "python"
+        },
+        kernelOptions: {
+            name: "python3",
+            path: "./content"
+        },
+        predefinedOutput: true
+    }
+    </script>
+    <script>kernelName = 'python3'</script>
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="processing.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">processing</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="boxplots.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">boxplots</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> Contents
+  </div>
+  <nav class="bd-toc-nav page-toc">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#area-plot">area_plot</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#parameters">Parameters</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#returns">Returns</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#sankey">sankey</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1">Parameters</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id2">Returns</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#relative-risk">relative_risk</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id3">Parameters</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id4">Returns</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#fetching-data-from-importation-plots">Fetching data from importation plots</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#fetch-area-plot-data">fetch_area_plot_data</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#id5">Parameters</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#id6">Returns</a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#fetch-sankey-data">fetch_sankey_data</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#id7">Parameters</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#id8">Returns</a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#fetch-relative-risk-data">fetch_relative_risk_data</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#id9">Parameters</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#id10">Returns</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By Matteo Chinazzi, Elijah Sandler
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2023.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
+<script src="../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>
