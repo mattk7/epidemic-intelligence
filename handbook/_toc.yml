@@ -2,7 +2,7 @@
 # Learn more at https://jupyterbook.org/customize/toc.html
 
 format: jb-book
-root: epidemic-intelligence/content/setup
+root: content/setup
 chapters:
 - file: content/processing
 - file: content/import_plots
