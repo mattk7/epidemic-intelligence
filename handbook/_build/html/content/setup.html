@@ -61,7 +61,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="importation_plots" href="import_plots.html" />
+    <link rel="next" title="processing" href="processing.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   </head>
@@ -182,6 +182,7 @@
             </li>
         </ul>
         <ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="processing.html">processing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="import_plots.html">importation_plots</a></li>
 <li class="toctree-l1"><a class="reference internal" href="boxplots.html">boxplots</a></li>
 </ul>
@@ -408,7 +409,7 @@ document.write(`
 <p><code class="docutils literal notranslate"><span class="pre">epidemic-intelligence</span></code> may be installed using pip:</p>
 <p>$ pip install epidemic-intelligence</p>
 <p>It relies on several dependencies, including <a class="reference external" href="https://cloud.google.com/python/docs/reference/bigquery/latest">bigquery</a>, <a class="reference external" href="https://plotly.com/python/">plotly</a>, <a class="reference external" href="https://matplotlib.org/">matplotlib</a>, and <a class="reference external" href="https://networkx.org/documentation/stable/index.html">networkx</a>, each of which have their own dependencies. pip will automatically try to install the correct version of these libraries, which may take a while. Once it is done, you can confirm that <code class="docutils literal notranslate"><span class="pre">epidemic-intelligence</span></code> has been installed correctly by running:</p>
-<p>$ pip show epidemic-intelligence</p>
+<p>$ pip show epidemic-inelligence</p>
 <p>You will then be able to import <code class="docutils literal notranslate"><span class="pre">epidemic-intelligence</span></code> into your Python environment.</p>
 <div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -440,50 +441,10 @@ document.write(`
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">google.oauth2</span> <span class="kn">import</span> <span class="n">service_account</span>
 <span class="kn">from</span> <span class="nn">google.cloud</span> <span class="kn">import</span> <span class="n">bigquery</span>
 
-<span class="n">credentials</span> <span class="o">=</span> <span class="n">service_account</span><span class="o">.</span><span class="n">Credentials</span><span class="o">.</span><span class="n">from_service_account_file</span><span class="p">(</span><span class="s1">&#39;C:</span><span class="se">\\</span><span class="s1">path</span><span class="se">\\</span><span class="s1">to</span><span class="se">\\</span><span class="s1">your</span><span class="se">\\</span><span class="s1">credentials.json&#39;</span><span class="p">)</span>
-<span class="n">project</span> <span class="o">=</span> <span class="s1">&#39;bigquery-project-id&#39;</span>
+<span class="n">credentials</span> <span class="o">=</span> <span class="n">service_account</span><span class="o">.</span><span class="n">Credentials</span><span class="o">.</span><span class="n">from_service_account_file</span><span class="p">(</span><span class="s1">&#39;../../../credentials.json&#39;</span><span class="p">)</span> <span class="c1"># use the path to your credentials</span>
+<span class="n">project</span> <span class="o">=</span> <span class="s1">&#39;net-data-viz-handbook&#39;</span> <span class="c1"># use your project name</span>
 <span class="c1"># Initialize a GC client</span>
 <span class="n">client</span> <span class="o">=</span> <span class="n">bigquery</span><span class="o">.</span><span class="n">Client</span><span class="p">(</span><span class="n">credentials</span><span class="o">=</span><span class="n">credentials</span><span class="p">,</span> <span class="n">project</span><span class="o">=</span><span class="n">project</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-<div class="cell_output docutils container">
-<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
-<span class="ne">FileNotFoundError</span><span class="g g-Whitespace">                         </span>Traceback (most recent call last)
-<span class="n">Cell</span> <span class="n">In</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span> <span class="n">line</span> <span class="mi">4</span>
-<span class="g g-Whitespace">      </span><span class="mi">1</span> <span class="kn">from</span> <span class="nn">google.oauth2</span> <span class="kn">import</span> <span class="n">service_account</span>
-<span class="g g-Whitespace">      </span><span class="mi">2</span> <span class="kn">from</span> <span class="nn">google.cloud</span> <span class="kn">import</span> <span class="n">bigquery</span>
-<span class="ne">----&gt; </span><span class="mi">4</span> <span class="n">credentials</span> <span class="o">=</span> <span class="n">service_account</span><span class="o">.</span><span class="n">Credentials</span><span class="o">.</span><span class="n">from_service_account_file</span><span class="p">(</span><span class="s1">&#39;C:</span><span class="se">\\</span><span class="s1">path</span><span class="se">\\</span><span class="s1">to</span><span class="se">\\</span><span class="s1">your</span><span class="se">\\</span><span class="s1">credentials.json&#39;</span><span class="p">)</span>
-<span class="g g-Whitespace">      </span><span class="mi">5</span> <span class="n">project</span> <span class="o">=</span> <span class="s1">&#39;bigquery-project-id&#39;</span>
-<span class="g g-Whitespace">      </span><span class="mi">6</span> <span class="c1"># Initialize a GC client</span>
-
-<span class="nn">File ~\Documents\24f-coop\demovenv\Lib\site-packages\google\oauth2\service_account.py:260,</span> in <span class="ni">Credentials.from_service_account_file</span><span class="nt">(cls, filename, **kwargs)</span>
-<span class="g g-Whitespace">    </span><span class="mi">248</span> <span class="nd">@classmethod</span>
-<span class="g g-Whitespace">    </span><span class="mi">249</span> <span class="k">def</span> <span class="nf">from_service_account_file</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-<span class="g g-Whitespace">    </span><span class="mi">250</span><span class="w">     </span><span class="sd">&quot;&quot;&quot;Creates a Credentials instance from a service account json file.</span>
-<span class="g g-Whitespace">    </span><span class="mi">251</span><span class="sd"> </span>
-<span class="g g-Whitespace">    </span><span class="mi">252</span><span class="sd">     Args:</span>
-<span class="sd">   (...)</span>
-<span class="g g-Whitespace">    </span><span class="mi">258</span><span class="sd">             credentials.</span>
-<span class="g g-Whitespace">    </span><span class="mi">259</span><span class="sd">     &quot;&quot;&quot;</span>
-<span class="ne">--&gt; </span><span class="mi">260</span>     <span class="n">info</span><span class="p">,</span> <span class="n">signer</span> <span class="o">=</span> <span class="n">_service_account_info</span><span class="o">.</span><span class="n">from_filename</span><span class="p">(</span>
-<span class="g g-Whitespace">    </span><span class="mi">261</span>         <span class="n">filename</span><span class="p">,</span> <span class="n">require</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;client_email&quot;</span><span class="p">,</span> <span class="s2">&quot;token_uri&quot;</span><span class="p">]</span>
-<span class="g g-Whitespace">    </span><span class="mi">262</span>     <span class="p">)</span>
-<span class="g g-Whitespace">    </span><span class="mi">263</span>     <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_from_signer_and_info</span><span class="p">(</span><span class="n">signer</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-
-<span class="nn">File ~\Documents\24f-coop\demovenv\Lib\site-packages\google\auth\_service_account_info.py:78,</span> in <span class="ni">from_filename</span><span class="nt">(filename, require, use_rsa_signer)</span>
-<span class="g g-Whitespace">     </span><span class="mi">64</span> <span class="k">def</span> <span class="nf">from_filename</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">require</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">use_rsa_signer</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-<span class="g g-Whitespace">     </span><span class="mi">65</span><span class="w">     </span><span class="sd">&quot;&quot;&quot;Reads a Google service account JSON file and returns its parsed info.</span>
-<span class="g g-Whitespace">     </span><span class="mi">66</span><span class="sd"> </span>
-<span class="g g-Whitespace">     </span><span class="mi">67</span><span class="sd">     Args:</span>
-<span class="sd">   (...)</span>
-<span class="g g-Whitespace">     </span><span class="mi">76</span><span class="sd">             info and a signer instance.</span>
-<span class="g g-Whitespace">     </span><span class="mi">77</span><span class="sd">     &quot;&quot;&quot;</span>
-<span class="ne">---&gt; </span><span class="mi">78</span>     <span class="k">with</span> <span class="n">io</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">json_file</span><span class="p">:</span>
-<span class="g g-Whitespace">     </span><span class="mi">79</span>         <span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">json_file</span><span class="p">)</span>
-<span class="g g-Whitespace">     </span><span class="mi">80</span>         <span class="k">return</span> <span class="n">data</span><span class="p">,</span> <span class="n">from_dict</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">require</span><span class="o">=</span><span class="n">require</span><span class="p">,</span> <span class="n">use_rsa_signer</span><span class="o">=</span><span class="n">use_rsa_signer</span><span class="p">)</span>
-
-<span class="ne">FileNotFoundError</span>: [Errno 2] No such file or directory: &#39;C:\\path\\to\\your\\credentials.json&#39;
 </pre></div>
 </div>
 </div>
@@ -493,7 +454,7 @@ document.write(`
 <section id="reference-table">
 <h2>Reference table<a class="headerlink" href="#reference-table" title="Link to this heading">#</a></h2>
 <p>A large part of <code class="docutils literal notranslate"><span class="pre">epidemic-intelligence</span></code> is the customizable geographical aggregations that occur when you create a visualization. In order to facilitate this, many function will ask for the location of a reference table. This table should contain a set of foreign key relationships between different geographical levels. When functions request something like <code class="docutils literal notranslate"><span class="pre">output_resolution</span></code> as a parameter, they are asking for the name of a column in the reference table. This will always be indicated in the documentation.</p>
-<img src="../images/sample_reference_able.png" alt="Sample Reference Table" width="1400" style="margin:auto;"/>
+<img src="../images/sample_reference_table.png" alt="Sample Reference Table" width="400" style="margin:auto;"/>
 <center>Sample Reference Table</center>
 <section id="uploading-a-table-to-bigquery">
 <h3>Uploading a table to BigQuery<a class="headerlink" href="#uploading-a-table-to-bigquery" title="Link to this heading">#</a></h3>
@@ -542,11 +503,11 @@ document.write(`
                   
 <div class="prev-next-area">
     <a class="right-next"
-       href="import_plots.html"
+       href="processing.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">importation_plots</p>
+        <p class="prev-next-title">processing</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>

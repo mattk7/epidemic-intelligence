@@ -1,0 +1,10 @@
+jupyter-book
+pandas
+plotly
+google-cloud-bigquery
+kaleido==0.1.0 #plotly helper
+matplotlib
+folium
+networkx
+cartopy
+netgraph

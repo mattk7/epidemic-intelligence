@@ -955,12 +955,12 @@ def fetch_fixed_time_quantiles(client, table_name, reference_table,
             FROM `{dataset}.data` d
             JOIN `{f'{dataset}.kmeans_results' if kmeans_table is False else kmeans_table}` k ON d.run_id = k.run_id        )
 
-        SELECT 
+        SELECT
             CENTROID_ID,
             date,
             {', '.join(conf_clause)}
         FROM centroid_data
-        GROUP BY CENTROID_ID, date, value
+        GROUP BY CENTROID_ID, date
         ORDER BY CENTROID_ID, date;
         '''
 

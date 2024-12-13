@@ -62,7 +62,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="boxplots" href="boxplots.html" />
-    <link rel="prev" title="Introduction to epidemic-intelligence" href="setup.html" />
+    <link rel="prev" title="processing" href="processing.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   </head>
@@ -181,6 +181,7 @@
             </li>
         </ul>
         <ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="processing.html">processing</a></li>
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">importation_plots</a></li>
 <li class="toctree-l1"><a class="reference internal" href="boxplots.html">boxplots</a></li>
 </ul>
@@ -428,7 +429,7 @@ document.write(`
 <section id="area-plot">
 <h2>area_plot<a class="headerlink" href="#area-plot" title="Link to this heading">#</a></h2>
 <p>Area plots are designed to show a change in comparable values over time; they compare apples to apples. In this example, we use H1N1 predictions from 2010 and show the origin countries for cases travelling from Asia to Europe.</p>
-<img src="../images/sample_area_plot.png" alt="Sample Area Plot" width="1400" style="margin:auto;"/><section id="parameters">
+<section id="parameters">
 <h3>Parameters<a class="headerlink" href="#parameters" title="Link to this heading">#</a></h3>
 <p><code class="docutils literal notranslate"><span class="pre">client</span></code> (<code class="docutils literal notranslate"><span class="pre">bigquery.Client</span></code>): BigQuery client object.</p>
 <p><code class="docutils literal notranslate"><span class="pre">table_name</span></code> (<code class="docutils literal notranslate"><span class="pre">str</span></code>): BigQuery table name containing importation data in ‘dataset.table’ form.</p>
@@ -456,7 +457,7 @@ document.write(`
 <section id="sankey">
 <h2>sankey<a class="headerlink" href="#sankey" title="Link to this heading">#</a></h2>
 <p>Sankey diagrams are designed to show the relative volume of flow from sources to targets. In this example, we use H1N1 predictions from 2010 and show the origin and destination countries for cases travelling from Asia to Europe.</p>
-<img src="../images/sample_sankey_plot.png" alt="Sample Sankey Plot" width="400" style="margin:auto;"/><section id="id1">
+<section id="id1">
 <h3>Parameters<a class="headerlink" href="#id1" title="Link to this heading">#</a></h3>
 <p><code class="docutils literal notranslate"><span class="pre">client</span></code> (<code class="docutils literal notranslate"><span class="pre">bigquery.Client</span></code>): BigQuery client object.</p>
 <p><code class="docutils literal notranslate"><span class="pre">table_name</span></code> (<code class="docutils literal notranslate"><span class="pre">str</span></code>): BigQuery table name containing importation data in ‘dataset.table’ form.</p>
@@ -487,7 +488,7 @@ document.write(`
 <section id="relative-risk">
 <h2>relative_risk<a class="headerlink" href="#relative-risk" title="Link to this heading">#</a></h2>
 <p>Sankey diagrams are designed to show a the relative volume of flow from sources to targets.</p>
-<img src="../images/sample_rr_plot.png" alt="Sample Relative Risk Plot" width="600" style="margin:auto;"/><section id="id3">
+<section id="id3">
 <h3>Parameters<a class="headerlink" href="#id3" title="Link to this heading">#</a></h3>
 <p><code class="docutils literal notranslate"><span class="pre">client</span></code> (<code class="docutils literal notranslate"><span class="pre">bigquery.Client</span></code>): BigQuery client object.</p>
 <p><code class="docutils literal notranslate"><span class="pre">table_name</span></code> (<code class="docutils literal notranslate"><span class="pre">str</span></code>): BigQuery table name containing importation data in ‘dataset.table’ form.</p>
@@ -586,12 +587,12 @@ document.write(`
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="setup.html"
+       href="processing.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Introduction to <code class="docutils literal notranslate"><span class="pre">epidemic-intelligence</span></code></p>
+        <p class="prev-next-title">processing</p>
       </div>
     </a>
     <a class="right-next"

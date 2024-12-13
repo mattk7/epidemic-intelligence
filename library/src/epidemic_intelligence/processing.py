@@ -213,21 +213,54 @@ def aggregate_importations(client, table_name, destination,
 
 
 def aggregate_sir(client, table_name, destination, 
-                    geo_column, value_columns,  run_id_column = 'run_id',
+                    geo_column, value_columns, run_id_column='run_id',
                     date='epi'):
-    
-    if isinstance(value_columns, str):
-        value_columns = [value_columns]
-    agg_values = ", ".join([f"SUM({col}) AS {col}" for col in value_columns])
-    
-    if date in ['iso']:
+    """
+    Aggregates data from a source table to a destination table based on specified logic.
+
+    Args:
+        client: Database client object to execute queries.
+        table_name (str): Name of the source table.
+        destination (str): Name of the destination table.
+        geo_column (str): Column containing geographic data.
+        value_columns (dict | list): Dictionary where keys are original columns and values are aggregated column names,
+                                     or list of column names to aggregate with the same name.
+        run_id_column (str): Name of the column containing run IDs. Defaults to 'run_id'.
+        date (str): Date format to use ('iso' or 'epi'). Defaults to 'epi'.
+
+    Returns:
+        bool: True if operation succeeds, otherwise raises an error.
+    """
+    # Determine aggregation logic based on the type of value_columns
+    if isinstance(value_columns, dict):
+        # Prepare aggregation expressions for dictionary
+        agg_mapping = {}
+        for orig_col, agg_col in value_columns.items():
+            if agg_col not in agg_mapping:
+                agg_mapping[agg_col] = []
+            agg_mapping[agg_col].append(orig_col)
+
+        agg_values = ", ".join([
+            f"SUM({'+'.join(columns)}) AS {agg_col}"
+            for agg_col, columns in agg_mapping.items()
+        ])
+
+    elif isinstance(value_columns, list):
+        # Prepare aggregation expressions for list (keep column names unchanged)
+        agg_values = ", ".join([f"SUM({col}) AS {col}" for col in value_columns])
+
+    else:
+        raise ValueError("value_columns must be either a dictionary or a list.")
+
+    if date == 'iso':
         agg_query = f"""
         CREATE OR REPLACE TABLE `{destination}` AS
         SELECT
             {run_id_column} AS run_id, 
             {geo_column} AS {geo_column}, 
             {agg_values},
-            {"CAST(EXTRACT(ISOYEAR FROM date) AS STRING) || 'W' || LPAD(CAST(EXTRACT(ISOWEEK FROM date) AS STRING), 2, '0')" if date=='iso' else 't.date'} AS date
+            CAST(EXTRACT(ISOYEAR FROM t.date) AS STRING) || 'W' || 
+            LPAD(CAST(EXTRACT(ISOWEEK FROM t.date) AS STRING), 2, '0') AS date
         FROM
             `{table_name}` AS t
         GROUP BY
@@ -241,35 +274,33 @@ def aggregate_sir(client, table_name, destination,
         epiweek_dict = {}
         for year in range(1950, 2100):
             for month in range(1, 13):
-                for day in range (1, 32):
+                for day in range(1, 32):
                     try:
-                        # epiweek_dict[f'{year:04d}-{month:02d}-{day:02d}'] = Week.fromdate(ddate(year, month, day)).cdcformat()
                         epiweek_dict[ddate(year, month, day)] = Week.fromdate(ddate(year, month, day)).cdcformat()
-                    except(ValueError):
+                    except ValueError:
                         pass
 
         tn = pd.DataFrame(epiweek_dict, index=['epiweek']).T.reset_index(names='date')
         epitable = table_name.split('.')[0] + '.' + generate_random_hash()
         client.load_table_from_dataframe(tn, epitable).result()
-        
+
         agg_query = f"""
-            CREATE OR REPLACE TABLE `{destination}` AS
-            SELECT
-                {run_id_column} AS run_id, 
-                {geo_column} AS {geo_column}, 
-                {agg_values}, 
-                e.epiweek AS date
-            FROM
-                `{table_name}` AS t
-            JOIN
-                `{epitable}` AS e ON e.date = t.date
-            GROUP BY
-                run_id,
-                {geo_column},
-                date
-            """
-        
+        CREATE OR REPLACE TABLE `{destination}` AS
+        SELECT
+            {run_id_column} AS run_id, 
+            {geo_column} AS {geo_column}, 
+            {agg_values}, 
+            e.epiweek AS date
+        FROM
+            `{table_name}` AS t
+        JOIN
+            `{epitable}` AS e ON e.date = t.date
+        GROUP BY
+            run_id,
+            {geo_column},
+            date
+        """
         execute(client, agg_query)
         client.delete_table(epitable, not_found_ok=True)
 
-        return True
+    return True
