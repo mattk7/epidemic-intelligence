@@ -16,6 +16,7 @@ name = "epidemic-intelligence"
 version = "0.4.9"
 authors = [
     { name = "Elijah Sandler", email = "sandler.e@northeastern.edu" },
+    { name = "Matteo Chinazzi", email = "m.chinazzi@northeastern.edu" }
 ]
 description = "A data visualization Python package to explore large-scale spatio-temporal simulation data."
 readme = "README.md"
@@ -30,6 +31,7 @@ dependencies = [
   "pandas>2.1.0",
   "plotly>5.24",
   "google-cloud-bigquery>3.0.0",
+  "google-cloud-bigquery-storage",
   "matplotlib>3.7.0",
   "kaleido==0.1.0.post1",
   "epiweeks",
