@@ -32,7 +32,7 @@
     <link rel="stylesheet" type="text/css" href="../_static/styles/sphinx-book-theme.css?v=a3416100" />
     <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css?v=13237357" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
-    <link rel="stylesheet" type="text/css" href="../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css?v=be8a1c11" />
+    <link rel="stylesheet" type="text/css" href="../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
     <link rel="stylesheet" type="text/css" href="../_static/sphinx-thebe.css?v=4fa983c6" />
     <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
   
@@ -238,7 +238,7 @@
       
       
       
-      <li><a href="https://github.com/mattk7/epidemic-intelligence/handbook" target="_blank"
+      <li><a href="https://github.com/mattk7/epidemic-intelligence/docs" target="_blank"
    class="btn btn-sm btn-source-repository-button dropdown-item"
    title="Source repository"
    data-bs-placement="left" data-bs-toggle="tooltip"
@@ -255,7 +255,7 @@
       
       
       
-      <li><a href="https://github.com/mattk7/epidemic-intelligence/handbook/issues/new?title=Issue%20on%20page%20%2Fcontent/processing.html&body=Your%20issue%20content%20here." target="_blank"
+      <li><a href="https://github.com/mattk7/epidemic-intelligence/docs/issues/new?title=Issue%20on%20page%20%2Fcontent/processing.html&body=Your%20issue%20content%20here." target="_blank"
    class="btn btn-sm btn-source-issues-button dropdown-item"
    title="Open an issue"
    data-bs-placement="left" data-bs-toggle="tooltip"
@@ -408,7 +408,7 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section class="tex2jax_ignore mathjax_ignore" id="processing">
+  <section id="processing">
 <h1>processing<a class="headerlink" href="#processing" title="Link to this heading">#</a></h1>
 <p><code class="docutils literal notranslate"><span class="pre">epidemic-intelligence</span></code> is designed to handle large numbers of simulations, but in order to visualize importation data, we must only have one ‘run’ worth of data. To facilitate this, the <code class="docutils literal notranslate"><span class="pre">processing</span></code> module offers two tools for simplifying and aggregating importation data to make it ready for visualization. Additionally, SIR style data can be aggregated from date into week data.</p>
 <section id="summarize-runs">
@@ -440,6 +440,8 @@ document.write(`
 <hr class="docutils" />
 <section id="example">
 <h3>Example<a class="headerlink" href="#example" title="Link to this heading">#</a></h3>
+<a class="reference internal image-reference" href="../_images/h1n1_proper.png"><img alt="Sample Reference Table" src="../_images/h1n1_proper.png" style="width: 800px;" />
+</a>
 <img src="../images/h1n1_proper.png" alt="Sample Reference Table" width="800" style="margin:auto;"/>
 <center>Sample Importation Table</center><div class="cell docutils container">
 <div class="cell_input docutils container">
@@ -487,7 +489,8 @@ document.write(`
 </div>
 </div>
 </div>
-<img src="../images/h1n1_proper_simple.png" alt="Sample Importation Table" width="800" style="margin:auto;"/>
+<a class="reference internal image-reference" href="../_images/h1n1_proper_simple.png"><img alt="Sample Importation Table" src="../_images/h1n1_proper_simple.png" style="width: 800px;" />
+</a>
 <center>Summarized Importation Table. Note that all run_ids are the same. </center></section>
 </section>
 <section id="aggregate-importations">
