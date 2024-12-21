@@ -28,9 +28,9 @@ sphinx:
     - https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js
     html_static_path: ['images']
 
-# Add a bibtex file so that we can create citations
-bibtex_bibfiles:
-  - references.bib
+# # Add a bibtex file so that we can create citations
+# bibtex_bibfiles:
+#   - references.bib
 
 # Information about where the book exists on the web
 repository:
