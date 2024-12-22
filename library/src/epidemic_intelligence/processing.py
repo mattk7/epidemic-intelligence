@@ -223,7 +223,7 @@ def aggregate_sir(client, table_name, destination,
         table_name (str): Name of the source table.
         destination (str): Name of the destination table.
         geo_column (str): Column containing geographic data.
-        value_columns (dict | list): Dictionary where keys are original columns and values are aggregated column names,
+        value_columns (dict | list): Dictionary where keys are aggregated column names and values are lists of original columns,
                                      or list of column names to aggregate with the same name.
         run_id_column (str): Name of the column containing run IDs. Defaults to 'run_id'.
         date (str): Date format to use ('iso' or 'epi'). Defaults to 'epi'.
@@ -234,15 +234,9 @@ def aggregate_sir(client, table_name, destination,
     # Determine aggregation logic based on the type of value_columns
     if isinstance(value_columns, dict):
         # Prepare aggregation expressions for dictionary
-        agg_mapping = {}
-        for orig_col, agg_col in value_columns.items():
-            if agg_col not in agg_mapping:
-                agg_mapping[agg_col] = []
-            agg_mapping[agg_col].append(orig_col)
-
         agg_values = ", ".join([
             f"SUM({'+'.join(columns)}) AS {agg_col}"
-            for agg_col, columns in agg_mapping.items()
+            for agg_col, columns in value_columns.items()
         ])
 
     elif isinstance(value_columns, list):
