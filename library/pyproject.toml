@@ -13,7 +13,7 @@ root = "src/epidemic_intelligence"
 
 [project]
 name = "epidemic-intelligence"
-version = "0.5.0"
+version = "0.5.1"
 authors = [
     { name = "Elijah Sandler", email = "sandler.e@northeastern.edu" },
     { name = "Matteo Chinazzi", email = "m.chinazzi@northeastern.edu" }

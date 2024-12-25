@@ -960,7 +960,6 @@ def fetch_fixed_time_quantiles(client, table_name, reference_table,
             date,
             {', '.join(conf_clause)}
         FROM centroid_data
-        GROUP BY CENTROID_ID, date
         ORDER BY CENTROID_ID, date;
         '''
 
