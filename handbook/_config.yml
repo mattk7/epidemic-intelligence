@@ -23,11 +23,11 @@ parse:
 
 # require.js to get plotly to display correctly
 sphinx:
-  master_doc: 'content/setup'
   config:
+    master_doc: content/setup
     html_js_files:
     - https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js
-    html_static_path: ['images', 'content']
+    html_static_path: ['images']
 
 # Information about where the book exists on the web
 repository:
