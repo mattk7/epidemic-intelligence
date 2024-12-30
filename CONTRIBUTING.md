@@ -20,13 +20,13 @@ Any changes to the full release of `epidemic-intelligence` should be reflected i
 
 Ensure `twine` is installed:
 ```
-    pip install twine
+pip install twine
 ```
 
 #### 2. Build dist files
 Run the following command from the `/library` directory of the repository:
 ```
-    python -m build
+python -m build
 ```
 
 If successful, the `/library/dist` folder will populate with a .whl and a .tar.gz file corresponding to the version number. 
@@ -38,11 +38,11 @@ It is recommended that you use twine to push the package to the server.
 
 To push to the test PyPI server: 
 ```
-    twine upload --repository testpypi dist/* --username __token__ --password paste_your_token_here
+twine upload --repository testpypi dist/* --username __token__ --password paste_your_token_here
 ```
 To push to the full PyPI server:
 ```
-    twine upload dist/* --username __token__ --password paste_your_token_here
+twine upload dist/* --username __token__ --password paste_your_token_here
 ```
 
 Note that all versions with a .tar.gz and a .whl file in the `\library\dist` folder will be uploaded. To prevent this, it is recommended that you remove the files corresponding to older versions from the folder before pushing to either server. 
@@ -67,7 +67,7 @@ Before building new HTML for the documentation, it is recommended that you delet
 
 Run the following command from the `\handbook` directory to create the `\handbook\_build` folder. This command will run all notebooks referenced within the table of contents:
 ```
-    python -m build
+python -m build
 ```
 
 #### 3. CHECK YOUR WORK!
@@ -76,5 +76,5 @@ Before updating the live site, please check that the local build works! The outp
 #### 4. Update gh-pages
 Once you are ready to push to the live site, run the following command. This will overwrite the gh-pages branch of this repository, which is the basis for the live site:
 ```
-    ghp-import -n -p -f _build/html
+ghp-import -n -p -f _build/html
 ```
