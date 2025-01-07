@@ -4,9 +4,9 @@
 This GitHub repository contains the code for the Python package and the documentation, which is contained within a JupyterBook.  
 
 ## Tools
-Full documentation, including installation and setup, is available [here](url). 
+Full documentation, including installation and setup, is available [here](https://www.matteochinazzi.com/epidemic-intelligence/content/setup.html). 
 
-The `epidemic-intelligence` package  can be found on the Python Package Index [here](url). 
+The `epidemic-intelligence` package  can be found on the Python Package Index [here](https://pypi.org/project/epidemic-intelligence). 
 
 Instructions for updating both the library and the corresponding documentation can be found in `CONTRIBUTING.md`.
 

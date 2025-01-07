@@ -14,7 +14,7 @@ Further updates to the library are required to make more robust use of different
 
 ### Building and pushing the package
 #### 1. Last checks
-Before the package is pushed, the version number must be changed in `pyproject.toml`. The full release of `epidemic-intelligence` uses semantic versioning, of which the full explanation can be found [here](https://semver.org/).
+Before the package is pushed, the version number must be changed in `pyproject.toml`. The full release of `epidemic-intelligence` uses semantic versioning, of which the full explanation can be found [here](https://semver.org/). Full documentation for the `pyproject.toml` file can be found [here](https://packaging.python.org/en/latest/guides/writing-pyproject-toml/).
 
 Any changes to the full release of `epidemic-intelligence` should be reflected in the documentation. See below for instructions. 
 
@@ -60,7 +60,7 @@ Place your BigQuery credentials in the same directory as this repository, and en
 
 ### Pushing documentation
 #### 1. Last checks
-Ensure that the table of contents, found at `\handbook\_toc.yaml`, is up to date. Documentation for structuring the table of contents can be found [here](https://jupyterbook.org/en/stable/structure/toc.html). 
+Ensure that the table of contents, found at `\handbook\_toc.yml`, is up to date. Documentation for structuring the table of contents can be found [here](https://jupyterbook.org/en/stable/structure/toc.html). 
 
 #### 2. Building html
 Before building new HTML for the documentation, it is recommended that you delete the existing `\handbook\_build` folder, if it exists. 
@@ -74,7 +74,7 @@ python -m build
 Before updating the live site, please check that the local build works! The output of the previous command will include instructions for viewing the local build in your browser. 
 
 #### 4. Update gh-pages
-Once you are ready to push to the live site, run the following command. This will overwrite the gh-pages branch of this repository, which is the basis for the live site:
+Once you are ready to push to the live site, run the following command. This will overwrite the `gh-pages` branch of this repository, which is the basis for the live site:
 ```
 ghp-import -n -p -f _build/html
 ```
