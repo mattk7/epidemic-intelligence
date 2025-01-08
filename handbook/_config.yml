@@ -3,12 +3,14 @@
 
 title: Complex Intelligence Lab Visualization Handbook
 author: Matteo Chinazzi, Elijah Sandler
+copyright: "2025"
 logo: logo.png # we can put that cool logo with the lighthouse here :)
 
 # Cache outputs so we don't have to query the cloud every time.
 # See https://jupyterbook.org/content/execute.html
 execute:
-  execute_notebooks: force
+  execute_notebooks: cache
+  timeout: 600
 
 # Define the name of the latex output file for PDF builds
 latex:
