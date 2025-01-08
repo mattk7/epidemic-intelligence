@@ -37,8 +37,8 @@ nbclient.exceptions.CellTimeoutError: A cell timed out while it was being execut
 The message was: Cell execution timed out.
 Here is a preview of the cell contents:
 -------------------
-['import epidemic_intelligence as ei', 'from google.oauth2 import service_account', 'from google.cloud import bigquery', '', "credentials = service_account.Credentials.from_service_account_file('../../../credentials.json') # use the path to your credentials"]
+['# required', "table_name = 'h1n1_R2.basins_prevalence_agg'", "reference_table = 'reference.gleam-geo-map'", "reference_column = 'basin_id' # name of a column in reference table", "geo_column = 'basin_id' # name of a column in table corresponding to column in reference table"]
 ...
-['sp_fig.update_layout(width=900, height=500, ', '                     showlegend=True, ', "                     font_family='PT Sans Narrow', ", "                     title='Spaghetti Plot',)", 'sp_fig.show()']
+['except RuntimeError as e:', '    if "Cell execution timed out" in e.message:', '        print(e)', '    else:', '        raise e']
 -------------------
 
