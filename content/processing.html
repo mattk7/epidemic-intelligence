@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>processing &#8212; Complex Intelligence Lab Visualization Handbook</title>
+    <title>Pre-processing Data &#8212; Complex Intelligence Lab Visualization Handbook</title>
   
   
   
@@ -32,7 +32,7 @@
     <link rel="stylesheet" type="text/css" href="../_static/styles/sphinx-book-theme.css?v=a3416100" />
     <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css?v=13237357" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
-    <link rel="stylesheet" type="text/css" href="../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/mystnb.4510f1fc1dee50b3e5859aac5469c37c29e427902b24a333a5f9fcb2f0b3ac41.css?v=be8a1c11" />
     <link rel="stylesheet" type="text/css" href="../_static/sphinx-thebe.css?v=4fa983c6" />
     <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
   
@@ -61,7 +61,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="importation_plots" href="import_plots.html" />
+    <link rel="next" title="Importation Plots" href="import_plots.html" />
     <link rel="prev" title="Introduction to epidemic-intelligence" href="setup.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -181,9 +181,11 @@
             </li>
         </ul>
         <ul class="current nav bd-sidenav">
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">processing</a></li>
-<li class="toctree-l1"><a class="reference internal" href="import_plots.html">importation_plots</a></li>
-<li class="toctree-l1"><a class="reference internal" href="boxplots.html">boxplots</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Pre-processing Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="import_plots.html">Importation Plots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="boxplots.html">Boxplots</a></li>
+<li class="toctree-l1"><a class="reference internal" href="styling_exporting.html">Modifying Visualizations</a></li>
+
 </ul>
 
     </div>
@@ -238,7 +240,7 @@
       
       
       
-      <li><a href="https://github.com/mattk7/epidemic-intelligence/docs" target="_blank"
+      <li><a href="https://github.com/mattk7/epidemic-intelligence" target="_blank"
    class="btn btn-sm btn-source-repository-button dropdown-item"
    title="Source repository"
    data-bs-placement="left" data-bs-toggle="tooltip"
@@ -255,7 +257,7 @@
       
       
       
-      <li><a href="https://github.com/mattk7/epidemic-intelligence/docs/issues/new?title=Issue%20on%20page%20%2Fcontent/processing.html&body=Your%20issue%20content%20here." target="_blank"
+      <li><a href="https://github.com/mattk7/epidemic-intelligence/issues/new?title=Issue%20on%20page%20%2Fcontent/processing.html&body=Your%20issue%20content%20here." target="_blank"
    class="btn btn-sm btn-source-issues-button dropdown-item"
    title="Open an issue"
    data-bs-placement="left" data-bs-toggle="tooltip"
@@ -369,7 +371,7 @@ document.write(`
               
 
 <div id="jb-print-docs-body" class="onlyprint">
-    <h1>processing</h1>
+    <h1>Pre-processing Data</h1>
     <!-- Table of contents -->
     <div id="print-main-content">
         <div id="jb-print-toc">
@@ -408,8 +410,8 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section id="processing">
-<h1>processing<a class="headerlink" href="#processing" title="Link to this heading">#</a></h1>
+  <section id="pre-processing-data">
+<h1>Pre-processing Data<a class="headerlink" href="#pre-processing-data" title="Link to this heading">#</a></h1>
 <p><code class="docutils literal notranslate"><span class="pre">epidemic-intelligence</span></code> is designed to handle large numbers of simulations, but in order to visualize importation data, we must only have one ‘run’ worth of data. To facilitate this, the <code class="docutils literal notranslate"><span class="pre">processing</span></code> module offers two tools for simplifying and aggregating importation data to make it ready for visualization. Additionally, SIR style data can be aggregated from date into week data.</p>
 <section id="summarize-runs">
 <h2>summarize_runs<a class="headerlink" href="#summarize-runs" title="Link to this heading">#</a></h2>
@@ -440,9 +442,7 @@ document.write(`
 <hr class="docutils" />
 <section id="example">
 <h3>Example<a class="headerlink" href="#example" title="Link to this heading">#</a></h3>
-<a class="reference internal image-reference" href="../_images/h1n1_proper.png"><img alt="Sample Reference Table" src="../_images/h1n1_proper.png" style="width: 800px;" />
-</a>
-<img src="../images/h1n1_proper.png" alt="Sample Reference Table" width="800" style="margin:auto;"/>
+<a class="reference internal image-reference" href="../_images/h1n1_proper.png"><img alt="Sample Reference Table" src="../_images/h1n1_proper.png" style="width: 800px;" /></a>
 <center>Sample Importation Table</center><div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">epidemic_intelligence</span> <span class="k">as</span> <span class="nn">ei</span>
@@ -477,20 +477,12 @@ document.write(`
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
-<span class="ne">ModuleNotFoundError</span><span class="g g-Whitespace">                       </span>Traceback (most recent call last)
-<span class="n">Cell</span> <span class="n">In</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">line</span> <span class="mi">1</span>
-<span class="ne">----&gt; </span><span class="mi">1</span> <span class="kn">import</span> <span class="nn">epidemic_intelligence</span> <span class="k">as</span> <span class="nn">ei</span>
-<span class="g g-Whitespace">      </span><span class="mi">2</span> <span class="kn">from</span> <span class="nn">google.oauth2</span> <span class="kn">import</span> <span class="n">service_account</span>
-<span class="g g-Whitespace">      </span><span class="mi">3</span> <span class="kn">from</span> <span class="nn">google.cloud</span> <span class="kn">import</span> <span class="n">bigquery</span>
-
-<span class="ne">ModuleNotFoundError</span>: No module named &#39;epidemic_intelligence&#39;
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>True
 </pre></div>
 </div>
 </div>
 </div>
-<a class="reference internal image-reference" href="../_images/h1n1_proper_simple.png"><img alt="Sample Importation Table" src="../_images/h1n1_proper_simple.png" style="width: 800px;" />
-</a>
+<a class="reference internal image-reference" href="../_images/h1n1_proper_simple.png"><img alt="Sample Importation Table" src="../_images/h1n1_proper_simple.png" style="width: 800px;" /></a>
 <center>Summarized Importation Table. Note that all run_ids are the same. </center></section>
 </section>
 <section id="aggregate-importations">
@@ -556,7 +548,7 @@ document.write(`
 </div>
 </div>
 </div>
-<img src="../images/h1n1_proper_simple_agg.png" alt="Sample Importation Table" width="800" style="margin:auto;"/>
+<a class="reference internal image-reference" href="../_images/h1n1_proper_simple_agg.png"><img alt="Sample Importation Table" src="../_images/h1n1_proper_simple_agg.png" style="width: 800px;" /></a>
 <center>Aggregated Importation Table. Note that the date is now in ISO format, and the compartment has been relabeled to 'Infectious'. </center></section>
 </section>
 <section id="aggregate-sir">
@@ -568,7 +560,7 @@ document.write(`
 <p><code class="docutils literal notranslate"><span class="pre">table_name</span></code> (<code class="docutils literal notranslate"><span class="pre">str</span></code>): BigQuery table name containing importation data in ‘dataset.table’ form.</p>
 <p><code class="docutils literal notranslate"><span class="pre">destination</span></code> (<code class="docutils literal notranslate"><span class="pre">str</span></code>): Name of resulting aggregated table in ‘dataset.table’ form.</p>
 <p><code class="docutils literal notranslate"><span class="pre">geo_column</span></code> (<code class="docutils literal notranslate"><span class="pre">str</span></code>): Name of column in original table containing geography identifier. Defaults to ‘basin_id’.</p>
-<p><code class="docutils literal notranslate"><span class="pre">value_columns</span></code> (<code class="docutils literal notranslate"><span class="pre">dict</span></code>): Dictionary where keys are original columns and values are aggregated column names, or list of column names to port over, which will keep the same name and not be aggregated.</p>
+<p><code class="docutils literal notranslate"><span class="pre">value_columns</span></code> (<code class="docutils literal notranslate"><span class="pre">dict</span></code>): Dictionary where keys are aggregated column names and values are lists of original columns, or list of column names to aggregate with the same name.</p>
 <p><code class="docutils literal notranslate"><span class="pre">run_id_column</span></code> (<code class="docutils literal notranslate"><span class="pre">str</span></code>, optional): Name of column in original table containing run ID. Defaults to run_id.</p>
 <p><code class="docutils literal notranslate"><span class="pre">date</span></code> (<code class="docutils literal notranslate"><span class="pre">str</span></code>, optional): The unit of time that data will be aggregated to. Must be one of:</p>
 <ul class="simple">
@@ -584,13 +576,13 @@ document.write(`
 <hr class="docutils" />
 <section id="id6">
 <h3>Example<a class="headerlink" href="#id6" title="Link to this heading">#</a></h3>
-<img src="../images/basins_prevalence.png" alt="Sample SIR Table" width="800" style="margin:auto;"/>
+<a class="reference internal image-reference" href="../_images/basins_prevalence.png"><img alt="Sample SIR Table" src="../_images/basins_prevalence.png" style="width: 800px;" /></a>
 <center>Sample SIR Data.</center><div class="cell docutils container">
 <div class="cell_input docutils container">
 <div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">table_name</span><span class="o">=</span><span class="s1">&#39;h1n1_R2.basins_prevalence&#39;</span>
 <span class="n">destination</span><span class="o">=</span><span class="s1">&#39;h1n1_R2.basins_prevalence_agg&#39;</span>
 <span class="n">geo_column</span><span class="o">=</span><span class="s1">&#39;basin_id&#39;</span>
-<span class="n">value_columns</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;Infectious_SympT_18_23&#39;</span><span class="p">:</span> <span class="s1">&#39;Infectious_18_23&#39;</span><span class="p">,</span> <span class="s1">&#39;Infectious_Asymp_18_23&#39;</span><span class="p">:</span> <span class="s1">&#39;Infectious_18_23&#39;</span><span class="p">,</span> <span class="s1">&#39;Susceptible_18_23&#39;</span><span class="p">:</span> <span class="s1">&#39;Susceptible_18_23&#39;</span><span class="p">}</span>
+<span class="n">value_columns</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;Infectious_18_23&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;Infectious_SympT_18_23&#39;</span><span class="p">,</span> <span class="s1">&#39;Infectious_Asymp_18_23&#39;</span><span class="p">],</span> <span class="s1">&#39;Susceptible_18_23&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;Susceptible_18_23&#39;</span><span class="p">]}</span>
 <span class="n">date</span><span class="o">=</span><span class="s1">&#39;iso&#39;</span>
 
 <span class="n">ei</span><span class="o">.</span><span class="n">aggregate_sir</span><span class="p">(</span>
@@ -598,9 +590,7 @@ document.write(`
     <span class="n">table_name</span><span class="o">=</span><span class="n">table_name</span><span class="p">,</span>
     <span class="n">destination</span><span class="o">=</span><span class="n">destination</span><span class="p">,</span>
     <span class="n">geo_column</span><span class="o">=</span><span class="n">geo_column</span><span class="p">,</span> 
-    <span class="n">value_columns</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;Infectious_SympT_18_23&#39;</span><span class="p">:</span> <span class="s1">&#39;Infectious_18_23&#39;</span><span class="p">,</span> 
-                   <span class="s1">&#39;Infectious_Asymp_18_23&#39;</span><span class="p">:</span> <span class="s1">&#39;Infectious_18_23&#39;</span><span class="p">,</span> 
-                   <span class="s1">&#39;Susceptible_18_23&#39;</span><span class="p">:</span> <span class="s1">&#39;Susceptible_18_23&#39;</span><span class="p">},</span>
+    <span class="n">value_columns</span><span class="o">=</span><span class="n">value_columns</span><span class="p">,</span>
     <span class="n">date</span><span class="o">=</span><span class="s1">&#39;iso&#39;</span>
 <span class="p">)</span>
 </pre></div>
@@ -612,7 +602,7 @@ document.write(`
 </div>
 </div>
 </div>
-<img src="../images/basins_prevalence_agg.png" alt="Sample SIR Table" width="800" style="margin:auto;"/>
+<a class="reference internal image-reference" href="../_images/basins_prevalence_agg.png"><img alt="Sample SIR Table" src="../_images/basins_prevalence_agg.png" style="width: 800px;" /></a>
 <center>Aggregated SIR Data.</center></section>
 </section>
 </section>
@@ -661,7 +651,7 @@ document.write(`
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">importation_plots</p>
+        <p class="prev-next-title">Importation Plots</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
